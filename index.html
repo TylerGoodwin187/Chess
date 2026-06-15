@@ -27,7 +27,7 @@ body{
 .hdr-title span{color:var(--accent)}
 
 /* Main */
-.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 10px 8px;gap:5px;overflow-x:hidden;overflow-y:auto;min-height:0}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 10px 8px;gap:5px;overflow:hidden;min-height:0}
 
 /* Player strips */
 .pstrip{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface);border-radius:10px;border:1px solid var(--border);flex-shrink:0}
@@ -42,6 +42,65 @@ body{
 .pdots i{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:db 1.1s infinite}
 .pdots i:nth-child(2){animation-delay:.18s}.pdots i:nth-child(3){animation-delay:.36s}
 @keyframes db{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
+
+/* Chess Timers */
+.ptimer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 58px;
+  text-align: center;
+}
+.ptimer.active {
+  background: var(--accent);
+  color: #111;
+}
+.ptimer.warn {
+  background: var(--red);
+  color: #fff;
+}
+
+/* Time Controls Panel */
+.tcontrols {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+}
+.tcontrols label {
+  font-size: 11px;
+  color: var(--text2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.tcontrols input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 12px;
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+}
+.tcontrols input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 /* Eval bar - unrated only */
 .evalrow{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -146,35 +205,6 @@ body{
 .toggle-btn.active{color:var(--text)}
 .toggle-btn.active.rated{color:var(--accent)}
 
-/* Match History Section */
-.match-hist-wrap {
-  width: 100%; max-width: 420px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
-  margin-top: 4px;
-}
-.match-hist-title {
-  font-size: 11px; font-weight: 700; color: var(--text2);
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-.match-hist-list {
-  display: flex; flex-direction: column; gap: 5px;
-  max-height: 120px; overflow-y: auto;
-}
-.match-hist-list::-webkit-scrollbar { width: 4px; }
-.match-hist-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.match-hist-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; font-size: 12px; cursor: pointer; transition: background 0.1s;
-}
-.match-hist-item:hover { background: var(--border); }
-.match-hist-left { display: flex; gap: 12px; align-items: center; }
-.match-hist-date { color: var(--text2); font-variant-numeric: tabular-nums; }
-.match-hist-result { font-weight: 600; }
-.match-hist-elo { font-weight: 700; color: var(--accent); }
-.match-hist-empty { font-size: 12px; color: var(--text2); text-align: center; padding: 8px 0; }
-
 /* Piece picker for edit mode */
 .picker{
   width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);
@@ -261,6 +291,7 @@ body{
     <div class="pname" id="name-top">Stockfish</div>
     <div class="prating" id="rtg-top">Elo 100</div>
     <span class="elo-delta" id="delta-top"></span>
+    <div class="ptimer" id="timer-top">05:00</div>
     <div class="pdots" id="dots"><i></i><i></i><i></i></div>
   </div>
 
@@ -276,6 +307,7 @@ body{
     <div class="pname" id="name-bottom">You</div>
     <div class="prating" id="rtg-bottom">Human</div>
     <span class="elo-delta" id="delta-bottom"></span>
+    <div class="ptimer" id="timer-bottom">05:00</div>
   </div>
 
   <div class="status" id="status">Loading…</div>
@@ -298,11 +330,10 @@ body{
     </button>
   </div>
 
-  <div class="ctrlrow">
-    <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
-    <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
-    <button class="btn" onclick="doFlip()">⇅ Flip</button>
-    <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
+  <div class="tcontrols" id="tcontrols">
+    <label>Minutes <input type="number" id="tc-min" value="5" min="0" max="180"></label>
+    <label>Seconds <input type="number" id="tc-sec" value="0" min="0" max="59"></label>
+    <label>Increment (s) <input type="number" id="tc-inc" value="3" min="0" max="60"></label>
   </div>
 
   <div class="toggle-wrap" id="toggle-wrap">
@@ -311,9 +342,11 @@ body{
     <button class="toggle-btn" id="tab-rated" onclick="setRated(true)">Rated</button>
   </div>
 
-  <div class="match-hist-wrap" id="match-hist-wrap">
-    <div class="match-hist-title">Match History</div>
-    <div class="match-hist-list" id="match-hist-list"></div>
+  <div class="ctrlrow">
+    <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
+    <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
+    <button class="btn" onclick="doFlip()">⇅ Flip</button>
+    <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
   </div>
 </div>
 
@@ -348,25 +381,21 @@ function pieceImg(type, color) {
 
 // ── Persistent Elo ────────────────────────────────────────────
 const ELO_KEY = 'chess_elo';
-const MATCH_HIST_KEY = 'chess_match_history';
-let memElo = 100; // in-memory fallback if localStorage is unavailable
-
+let memElo = 100;
 function getElo() {
   try {
     const v = parseInt(localStorage.getItem(ELO_KEY));
-    return isNaN(v) ? memElo : Math.max(100, v);
+    return isNaN(v) ? memElo : v;
   } catch (e) {
-    return Math.max(100, memElo);
+    return memElo;
   }
 }
 function setElo(v) {
-  v = Math.max(100, v);
+  v = Math.max(0, v);
   memElo = v;
   try {
     localStorage.setItem(ELO_KEY, String(v));
-  } catch (e) {
-    // storage unavailable
-  }
+  } catch (e) {}
   return v;
 }
 
@@ -385,7 +414,15 @@ let aiThinking  = false;
 let pendingPromo = null;  // {from, to} algebraic
 let rated       = false;
 let gameStarted = false;  // becomes true after first move is made
-let gameSavedToHistory = false;
+
+// Clock / Timer state
+let whiteTime       = 300000; // time left in ms
+let blackTime       = 300000;
+let timeIncrement   = 3000;   // increment in ms
+let clockInterval   = null;
+let turnStartTime   = null;   // timestamp when turn started
+let gameStartDateStr = "";
+let gameStartTimeStr = "";
 
 // Drag state
 let dragPiece   = null;
@@ -395,9 +432,9 @@ let dragOffsetX = 0, dragOffsetY = 0;
 // Edit mode state
 let editMode    = false;
 let editBoard   = null;   // 64-array of {type,color}|null while editing
-let editTool    = null;   // {type,color} | 'trash' | null (null = drag mode)
+let editTool    = null;   // {type,color} | 'trash' | null
 
-const PIECE_TYPES = ['q','r','b','n','p']; // kings excluded from picker
+const PIECE_TYPES = ['q','r','b','n','p'];
 
 // ── Coordinate helpers ────────────────────────────────────────
 function idxToAlg(idx) {
@@ -455,9 +492,7 @@ function applyEloToEngine() {
     const uciElo = Math.min(3190, Math.max(1320, getElo()));
     sf.postMessage('setoption name UCI_LimitStrength value true');
     sf.postMessage('setoption name UCI_Elo value ' + uciElo);
-  } catch (e) {
-    // never let Elo configuration block engine startup
-  }
+  } catch (e) {}
 }
 
 function sfGo(fen) {
@@ -504,12 +539,14 @@ function buildBoard() {
   render();
 }
 
+// ── Get current piece at idx ──────────────────────────────────
 function pieceAt(idx) {
   if (editMode) return editBoard[idx];
   const p = game.get(idxToAlg(idx));
   return p ? { type: p.type, color: p.color } : null;
 }
 
+// ── Render pieces + highlights ────────────────────────────────
 function render() {
   document.querySelectorAll('.sq').forEach(sqEl => {
     const idx = +sqEl.dataset.i;
@@ -551,6 +588,7 @@ function canDragFrom(idx) {
   return true;
 }
 
+// ── Drag handlers ─────────────────────────────────────────────
 function attachDragHandlers(img, idx) {
   img.addEventListener('pointerdown', (e) => onDragStart(e, idx));
 }
@@ -686,6 +724,7 @@ function onPickerDragEnd(e) {
   render();
 }
 
+// ── Click handling ────────────────────────────────────────────
 function onSqClick(idx) {
   if (editMode) { onEditSqClick(idx); return; }
   if (!sfReady || aiThinking) return;
@@ -720,6 +759,7 @@ function onSqClick(idx) {
   }
 }
 
+// ── Attempt a move ────────────────────────────────────────────
 function attemptMove(fromIdx, toIdx) {
   const fromAlg = idxToAlg(fromIdx);
   const toAlg   = idxToAlg(toIdx);
@@ -743,14 +783,35 @@ function attemptMove(fromIdx, toIdx) {
 }
 
 function doMove(from, to, promo) {
+  // Deduct player's elapsed time & process custom 1-second increment rule
+  if (!gameStarted) {
+    gameStarted = true;
+    const d = new Date();
+    gameStartDateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+    gameStartTimeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+    startClockInterval();
+    turnStartTime = Date.now();
+  } else {
+    const now = Date.now();
+    const elapsed = now - turnStartTime;
+    if (game.turn() === 'w') {
+      whiteTime -= elapsed;
+      if (elapsed <= 1000) whiteTime += timeIncrement;
+    } else {
+      blackTime -= elapsed;
+      if (elapsed <= 1000) blackTime += timeIncrement;
+    }
+    turnStartTime = now;
+  }
+
   const result = game.move({ from, to, promotion: promo || 'q' });
   if (!result) return;
 
-  gameStarted = true;
   lastMv = { from: algToIdx(from), to: algToIdx(to) };
   sel = null; hints = [];
   render();
   updateHist();
+  updateClockDisplays();
   updateStatus();
   checkOver();
   updateButtons();
@@ -760,6 +821,7 @@ function doMove(from, to, promo) {
   }
 }
 
+// ── Promotion ─────────────────────────────────────────────────
 function showPromo(color) {
   const types = ['q', 'r', 'b', 'n'];
   const cont  = document.getElementById('promo-pieces');
@@ -785,6 +847,7 @@ function showPromo(color) {
   document.getElementById('promo-ov').classList.add('on');
 }
 
+// ── Stockfish move ────────────────────────────────────────────
 async function doAI() {
   if (aiThinking || !sfReady) return;
   aiThinking = true;
@@ -798,8 +861,29 @@ async function doAI() {
       const from  = moveStr.slice(0, 2);
       const to    = moveStr.slice(2, 4);
       const promo = moveStr[4] || undefined;
+      
+      // Deduct AI time & process custom 1-second increment rule
+      if (!gameStarted) {
+        gameStarted = true;
+        const d = new Date();
+        gameStartDateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+        gameStartTimeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+        startClockInterval();
+        turnStartTime = Date.now();
+      } else {
+        const now = Date.now();
+        const elapsed = now - turnStartTime;
+        if (game.turn() === 'w') {
+          whiteTime -= elapsed;
+          if (elapsed <= 1000) whiteTime += timeIncrement;
+        } else {
+          blackTime -= elapsed;
+          if (elapsed <= 1000) blackTime += timeIncrement;
+        }
+        turnStartTime = now;
+      }
+
       game.move({ from, to, promotion: promo });
-      gameStarted = true;
       lastMv = { from: algToIdx(from), to: algToIdx(to) };
     }
   } catch(e) {
@@ -810,11 +894,117 @@ async function doAI() {
   document.getElementById('dots').classList.remove('on');
   render();
   updateHist();
+  updateClockDisplays();
   updateStatus();
   checkOver();
   updateButtons();
 }
 
+// ── Chess Clock Processing ────────────────────────────────────
+function formatTime(ms) {
+  if (ms < 0) ms = 0;
+  const totalSecs = Math.ceil(ms / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+}
+
+function updateClockDisplays() {
+  const topTimer = document.getElementById('timer-top');
+  const botTimer = document.getElementById('timer-bottom');
+
+  const topTime = flipped ? whiteTime : blackTime;
+  const botTime = flipped ? blackTime : whiteTime;
+
+  topTimer.textContent = formatTime(topTime);
+  botTimer.textContent = formatTime(botTime);
+
+  topTimer.classList.remove('active', 'warn');
+  botTimer.classList.remove('active', 'warn');
+
+  if (gameStarted && !game.game_over() && !editMode) {
+    if (game.turn() === 'w') {
+      if (flipped) topTimer.classList.add('active'); else botTimer.classList.add('active');
+    } else {
+      if (flipped) botTimer.classList.add('active'); else topTimer.classList.add('active');
+    }
+  }
+
+  if (topTime < 20000) topTimer.classList.add('warn');
+  if (botTime < 20000) botTimer.classList.add('warn');
+}
+
+function startClockInterval() {
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = setInterval(() => {
+    if (!gameStarted || game.game_over() || editMode) {
+      clearInterval(clockInterval);
+      return;
+    }
+
+    const now = Date.now();
+    const elapsed = now - turnStartTime;
+
+    if (game.turn() === 'w') {
+      const timeLeft = whiteTime - elapsed;
+      if (timeLeft <= 0) {
+        whiteTime = 0;
+        clearInterval(clockInterval);
+        handleTimeout('w');
+        return;
+      }
+    } else {
+      const timeLeft = blackTime - elapsed;
+      if (timeLeft <= 0) {
+        blackTime = 0;
+        clearInterval(clockInterval);
+        handleTimeout('b');
+        return;
+      }
+    }
+    updateClockDisplays();
+  }, 100);
+}
+
+function handleTimeout(loserColor) {
+  if (clockInterval) clearInterval(clockInterval);
+  updateClockDisplays();
+  let em, title, sub, eloChange = 0;
+
+  const playerIsLoser = (playerColor === loserColor);
+  em    = playerIsLoser ? '💀' : '🏆';
+  title = playerIsLoser ? 'Stockfish Wins' : 'You Win!';
+  sub   = 'Timeout';
+  eloChange = playerIsLoser ? -30 : 30;
+
+  const ovElo = document.getElementById('ov-elo');
+  if (rated) {
+    const oldElo = getElo();
+    const newElo = setElo(oldElo + eloChange);
+    if (eloChange > 0) {
+      ovElo.textContent = `+${eloChange} Elo → ${newElo}`;
+      ovElo.className = 'ovelo up';
+    } else if (eloChange < 0) {
+      ovElo.textContent = `${eloChange} Elo → ${newElo}`;
+      ovElo.className = 'ovelo down';
+    } else {
+      ovElo.textContent = `Elo unchanged (${newElo})`;
+      ovElo.className = 'ovelo';
+    }
+    refreshStrips();
+    applyEloToEngine();
+  } else {
+    ovElo.textContent = 'Unrated — Elo unchanged';
+    ovElo.className = 'ovelo';
+  }
+
+  document.getElementById('ov-em').textContent = em;
+  document.getElementById('ov-t').textContent  = title;
+  document.getElementById('ov-s').textContent  = sub;
+  setTimeout(() => document.getElementById('ov').classList.add('on'), 200);
+}
+
+// ── Eval bar ──────────────────────────────────────────────────
 function updateEvalBar(score) {
   if (rated) return;
   const c = Math.max(-10, Math.min(10, score));
@@ -822,6 +1012,7 @@ function updateEvalBar(score) {
   document.getElementById('enum').textContent = (score > 0.05 ? '+' : '') + score.toFixed(1);
 }
 
+// ── Status ────────────────────────────────────────────────────
 function setStatus(msg, cls) {
   const el = document.getElementById('status');
   el.textContent = msg;
@@ -837,6 +1028,7 @@ function updateStatus() {
   else                                   setStatus('Stockfish · ' + who, '');
 }
 
+// ── Move history ──────────────────────────────────────────────
 function updateHist() {
   const rowsEl = document.getElementById('histrows');
   const hist = game.history();
@@ -898,6 +1090,11 @@ document.getElementById('copy-btn').addEventListener('click', () => {
   const hist = game.history();
   if (!hist.length) return;
   let text = '';
+  
+  if (gameStartDateStr) {
+    text += `[Date "${gameStartDateStr}"]\n[Time "${gameStartTimeStr}"]\n\n`;
+  }
+
   for (let i = 0; i < hist.length; i += 2) {
     const mn = i / 2 + 1;
     text += mn + '. ' + hist[i];
@@ -923,116 +1120,10 @@ document.getElementById('copy-btn').addEventListener('click', () => {
   }
 });
 
-// ── Match History Storage ─────────────────────────────────────
-function getMatchHistory() {
-  try {
-    const data = localStorage.getItem(MATCH_HIST_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function saveMatchToHistory(result, elo) {
-  try {
-    const history = getMatchHistory();
-    const d = new Date();
-    const dateStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
-    
-    const newMatch = {
-      date: dateStr,
-      result: result,
-      elo: elo,
-      moves: game.history()
-    };
-    
-    history.unshift(newMatch);
-    localStorage.setItem(MATCH_HIST_KEY, JSON.stringify(history));
-    renderMatchHistory();
-  } catch (e) {
-    // storage unavailable
-  }
-}
-
-function renderMatchHistory() {
-  const listEl = document.getElementById('match-hist-list');
-  if (!listEl) return;
-  
-  const history = getMatchHistory();
-  if (history.length === 0) {
-    listEl.innerHTML = '<div class="match-hist-empty">No games played yet.</div>';
-    return;
-  }
-  
-  listEl.innerHTML = '';
-  history.forEach((match) => {
-    const item = document.createElement('div');
-    item.className = 'match-hist-item';
-    
-    const left = document.createElement('div');
-    left.className = 'match-hist-left';
-    
-    const dateSpan = document.createElement('span');
-    dateSpan.className = 'match-hist-date';
-    dateSpan.textContent = match.date;
-    
-    const resultSpan = document.createElement('span');
-    resultSpan.className = 'match-hist-result';
-    resultSpan.textContent = match.result;
-    
-    left.appendChild(dateSpan);
-    left.appendChild(resultSpan);
-    
-    const eloSpan = document.createElement('span');
-    eloSpan.className = 'match-hist-elo';
-    eloSpan.textContent = 'Elo ' + match.elo;
-    
-    item.appendChild(left);
-    item.appendChild(eloSpan);
-    
-    item.onclick = () => loadSavedGame(match.moves);
-    listEl.appendChild(item);
-  });
-}
-
-function loadSavedGame(moves) {
-  if (aiThinking) return;
-  if (sf) sf.postMessage('stop');
-  
-  game = new Chess();
-  for (const m of moves) {
-    game.move(m);
-  }
-  
-  gameStarted = true;
-  const verboseHist = game.history({verbose: true});
-  if (verboseHist.length > 0) {
-    const lastVerbose = verboseHist[verboseHist.length - 1];
-    lastMv = { from: algToIdx(lastVerbose.from), to: algToIdx(lastVerbose.to) };
-  } else {
-    lastMv = null;
-  }
-  
-  sel = null;
-  hints = [];
-  
-  buildBoard();
-  updateHist();
-  updateStatus();
-  updateButtons();
-  
-  if (game.game_over()) {
-    let title = 'Draw';
-    if (game.in_checkmate()) {
-      title = game.turn() === playerColor ? 'Stockfish Wins' : 'You Win!';
-    }
-    setStatus('Reviewing: ' + title, 'alert');
-  }
-}
-
-// ── Game over + Elo update ──────────────────────────────────────
+// ── Game over ─────────────────────────────────────────────────
 function checkOver() {
   if (!game.game_over()) return;
+  if (clockInterval) clearInterval(clockInterval);
   let em, title, sub, eloChange = 0;
 
   if (game.in_checkmate()) {
@@ -1072,18 +1163,13 @@ function checkOver() {
     ovElo.className = 'ovelo';
   }
 
-  if (!gameSavedToHistory) {
-    saveMatchToHistory(title, getElo());
-    gameSavedToHistory = true;
-  }
-
   document.getElementById('ov-em').textContent = em;
   document.getElementById('ov-t').textContent  = title;
   document.getElementById('ov-s').textContent  = sub;
   setTimeout(() => document.getElementById('ov').classList.add('on'), 700);
 }
 
-// ── Player strip labels ─────────────────────────────────────────
+// ── Player strip labels ───────────────────────────────────────
 function refreshStrips() {
   const youAreWhite = playerColor === 'w';
   const elo = getElo();
@@ -1125,11 +1211,25 @@ function refreshStrips() {
 // ── Controls ──────────────────────────────────────────────────
 function newGame() {
   if (editMode) { exitEditMode(false); }
+
+  // Configure clock settings from UI fields
+  const tcMin = Math.max(0, parseInt(document.getElementById('tc-min').value) || 0);
+  const tcSec = Math.max(0, Math.min(59, parseInt(document.getElementById('tc-sec').value) || 0));
+  const tcInc = Math.max(0, parseInt(document.getElementById('tc-inc').value) || 0);
+  whiteTime = (tcMin * 60 + tcSec) * 1000;
+  blackTime = whiteTime;
+  timeIncrement = tcInc * 1000;
+
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = null;
+  turnStartTime = null;
+  gameStartDateStr = "";
+  gameStartTimeStr = "";
+
   game = new Chess();
   sel = null; hints = []; lastMv = null;
   aiThinking = false; pendingPromo = null;
   gameStarted = false;
-  gameSavedToHistory = false;
   if (sf) sf.postMessage('stop');
   document.getElementById('dots').classList.remove('on');
   document.getElementById('ebar').style.width = '50%';
@@ -1144,10 +1244,19 @@ function newGame() {
     playerColor = 'w';
   }
   refreshStrips();
+  updateClockDisplays();
 
   if (sfReady) {
     updateStatus();
-    if (game.turn() !== playerColor) setTimeout(doAI, 300);
+    if (game.turn() !== playerColor) {
+      gameStarted = true;
+      const d = new Date();
+      gameStartDateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+      gameStartTimeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+      startClockInterval();
+      turnStartTime = Date.now();
+      setTimeout(doAI, 300);
+    }
   }
 }
 
@@ -1163,8 +1272,21 @@ function doUndo() {
   lastMv = null;
   sel = null; hints = [];
   gameStarted = game.history().length > 0;
+
+  if (!gameStarted) {
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = null;
+    const tcMin = Math.max(0, parseInt(document.getElementById('tc-min').value) || 0);
+    const tcSec = Math.max(0, Math.min(59, parseInt(document.getElementById('tc-sec').value) || 0));
+    whiteTime = (tcMin * 60 + tcSec) * 1000;
+    blackTime = whiteTime;
+  } else {
+    turnStartTime = Date.now();
+  }
+
   render();
   updateHist();
+  updateClockDisplays();
   updateStatus();
   updateButtons();
 }
@@ -1174,16 +1296,24 @@ function doFlip() {
   if (!gameStarted && game.history().length === 0 && !editMode) {
     playerColor = playerColor === 'w' ? 'b' : 'w';
     if (sfReady && game.turn() !== playerColor) {
+      gameStarted = true;
+      const d = new Date();
+      gameStartDateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+      gameStartTimeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+      startClockInterval();
+      turnStartTime = Date.now();
       setTimeout(doAI, 300);
     }
   }
   buildBoard();
   refreshStrips();
+  updateClockDisplays();
   updateStatus();
 }
 
 function closeOv() { document.getElementById('ov').classList.remove('on'); }
 
+// ── Rated / Unrated toggle ───────────────────────────────────────
 function setRated(val) {
   if (editMode && val !== rated) {
     exitEditMode(false);
@@ -1198,6 +1328,7 @@ function setRated(val) {
   updateButtons();
 }
 
+// ── Button enable/disable states ─────────────────────────────────
 function updateButtons() {
   const undoBtn = document.getElementById('btn-undo');
   undoBtn.disabled = rated || editMode;
@@ -1207,6 +1338,12 @@ function updateButtons() {
   editBtn.classList.toggle('active-edit', editMode);
 
   document.getElementById('btn-new').textContent = editMode ? 'Start Game' : 'New Game';
+
+  // Locks the time controls when edit mode is active or when a match has started
+  const tcDisabled = gameStarted || editMode;
+  document.getElementById('tc-min').disabled = tcDisabled;
+  document.getElementById('tc-sec').disabled = tcDisabled;
+  document.getElementById('tc-inc').disabled = tcDisabled;
 }
 
 // ── Edit mode ─────────────────────────────────────────────────────
@@ -1375,14 +1512,31 @@ function attemptStartFromEdit() {
   game = testGame;
   lastMv = null; sel = null; hints = [];
   gameStarted = false;
-  gameSavedToHistory = false;
+
+  const tcMin = Math.max(0, parseInt(document.getElementById('tc-min').value) || 0);
+  const tcSec = Math.max(0, Math.min(59, parseInt(document.getElementById('tc-sec').value) || 0));
+  const tcInc = Math.max(0, parseInt(document.getElementById('tc-inc').value) || 0);
+  whiteTime = (tcMin * 60 + tcSec) * 1000;
+  blackTime = whiteTime;
+  timeIncrement = tcInc * 1000;
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = null;
+  turnStartTime = null;
+
   exitEditMode(true);
   refreshStrips();
   buildBoard();
   updateHist();
+  updateClockDisplays();
   updateStatus();
 
   if (game.turn() !== playerColor && sfReady) {
+    gameStarted = true;
+    const d = new Date();
+    gameStartDateStr = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+    gameStartTimeStr = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+    startClockInterval();
+    turnStartTime = Date.now();
     setTimeout(doAI, 300);
   }
 }
@@ -1395,8 +1549,8 @@ if ('serviceWorker' in navigator) {
 (async () => {
   buildBoard();
   refreshStrips();
+  updateClockDisplays();
   updateButtons();
-  renderMatchHistory();
   const bar = document.getElementById('lbar');
   const sub = document.getElementById('lsub');
   bar.style.width = '15%';
