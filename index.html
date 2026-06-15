@@ -26,8 +26,47 @@ body{
 .hdr-title{font-size:15px;font-weight:700}
 .hdr-title span{color:var(--accent)}
 
-/* Main */
-.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 10px 8px;gap:5px;overflow:hidden;min-height:0}
+/* Main Layout Split */
+.main-layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+.game-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 10px 8px;
+  gap: 5px;
+  overflow: hidden;
+  min-width: 0;
+}
+.sidebar {
+  width: 260px;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .main-layout { flex-direction: column; overflow-y: auto; }
+  .sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); height: 220px; flex-shrink: 0; }
+}
+
+/* Sidebar Memory Archive Styling */
+.archive-hdr { padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); background: var(--surface2); }
+.archive-list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
+.archive-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; transition: background 0.15s; }
+.archive-item:hover { background: #3a3a3c; }
+.archive-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+.archive-tag { font-weight: 700; border-radius: 3px; padding: 1px 4px; font-size: 9px; text-transform: uppercase; }
+.archive-tag.rated { background: var(--accent); color: #111; }
+.archive-tag.unrated { background: var(--border); color: var(--text2); }
+.archive-date { color: var(--text2); }
+.archive-outcome { font-size: 12px; font-weight: bold; }
 
 /* Player strips */
 .pstrip{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface);border-radius:10px;border:1px solid var(--border);flex-shrink:0}
@@ -59,7 +98,7 @@ body{
 
 @keyframes flash-clock{from{opacity:1}to{opacity:0.6}}
 
-/* Eval bar - unrated only */
+/* Eval bar */
 .evalrow{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .evalrow.hidden{display:none}
 .evalbar{flex:1;height:5px;background:#2a2520;border-radius:3px;overflow:hidden}
@@ -162,7 +201,7 @@ body{
 .toggle-btn.active{color:var(--text)}
 .toggle-btn.active.rated{color:var(--accent)}
 
-/* Piece picker for edit mode */
+/* Piece picker */
 .picker{
   width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);
   border-radius:10px;padding:8px;display:none;flex-shrink:0;
@@ -175,7 +214,6 @@ body{
   background:var(--surface2);cursor:pointer;padding:4px;transition:transform .1s;
   touch-action:none;
 }
-.picker-piece:active{transform:scale(.9)}
 .picker-piece.sel{border-color:var(--accent);background:rgba(232,196,74,.15)}
 .picker-piece img{width:100%;height:100%;object-fit:contain}
 .picker-trash{
@@ -184,7 +222,6 @@ body{
   font-size:18px;transition:transform .1s;
 }
 .picker-trash.sel{border-color:var(--red);background:rgba(224,85,85,.15)}
-.picker-trash:active{transform:scale(.9)}
 
 /* Promotion */
 .promo-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:150;align-items:center;justify-content:center}
@@ -197,10 +234,9 @@ body{
   background:var(--surface2);cursor:pointer;padding:6px;
   transition:transform .1s;
 }
-.promo-btn:active{transform:scale(.9)}
 .promo-btn img{width:100%;height:100%;object-fit:contain}
 
-/* Game over */
+/* Game over overlay */
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99;align-items:center;justify-content:center}
 .ov.on{display:flex}
 .ovc{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;text-align:center;max-width:290px;width:88%}
@@ -212,7 +248,13 @@ body{
 .ovelo.down{color:var(--red)}
 .ovbtns{display:flex;flex-direction:column;gap:9px}
 
-/* Edit mode banner */
+/* Review Game Archive Overlay */
+.review-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:160; align-items:center; justify-content:center; }
+.review-ov.on { display:flex; }
+.review-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; width:90%; max-width:380px; display:flex; flex-direction:column; gap:12px; }
+.review-title { font-size:16px; font-weight:700; color:var(--accent); }
+.review-box { max-height:160px; overflow-y:auto; background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; font-size:13px; line-height:1.5; color:var(--text); word-break: break-word; user-select: text; -webkit-user-select: text;}
+
 .edit-banner{
   width:100%;max-width:420px;background:rgba(232,196,74,.12);border:1px solid var(--accent);
   border-radius:9px;padding:6px 10px;font-size:11px;color:var(--accent);text-align:center;
@@ -243,79 +285,87 @@ body{
   <div class="hdr-title">♟ <span>Chess</span></div>
 </div>
 
-<div class="main">
-  <!-- Top Player Strip -->
-  <div class="pstrip" id="strip-top">
-    <div class="picon b" id="icon-top">♚</div>
-    <div class="pname" id="name-top">Stockfish</div>
-    <div class="prating" id="rtg-top">Elo 100</div>
-    <span class="elo-delta" id="delta-top"></span>
-    <div class="pdots" id="dots"><i></i><i></i><i></i></div>
-    
-    <div class="clock-container">
-      <div class="clock-selector-wrap" id="wrap-top">
-        <select id="time-top" onchange="onClockConfigChange('top')"></select>
-        <span class="inc-label">i</span>
-        <select id="inc-top" onchange="onClockConfigChange('top')"></select>
+<div class="main-layout">
+  <div class="game-container">
+    <!-- Top Player Strip -->
+    <div class="pstrip" id="strip-top">
+      <div class="picon b" id="icon-top">♚</div>
+      <div class="pname" id="name-top">Stockfish</div>
+      <div class="prating" id="rtg-top">Elo 100</div>
+      <span class="elo-delta" id="delta-top"></span>
+      <div class="pdots" id="dots"><i></i><i></i><i></i></div>
+      
+      <div class="clock-container">
+        <div class="clock-selector-wrap" id="wrap-top">
+          <select id="time-top" onchange="onClockConfigChange('top')"></select>
+          <span class="inc-label">i</span>
+          <select id="inc-top" onchange="onClockConfigChange('top')"></select>
+        </div>
       </div>
+    </div>
+
+    <div class="evalrow" id="evalrow">
+      <div class="evalbar"><div class="evalfill" id="ebar"></div></div>
+      <div class="evalnum" id="enum">0.0</div>
+    </div>
+
+    <div class="bwrap"><div id="board"></div></div>
+
+    <!-- Bottom Player Strip -->
+    <div class="pstrip" id="strip-bottom">
+      <div class="picon w" id="icon-bottom">♔</div>
+      <div class="pname" id="name-bottom">You</div>
+      <div class="prating" id="rtg-bottom">Elo 100</div>
+      <span class="elo-delta" id="delta-bottom"></span>
+      <div class="pdots" id="dots-bottom"></div>
+      
+      <div class="clock-container">
+        <div class="clock-selector-wrap" id="wrap-bottom">
+          <select id="time-bottom" onchange="onClockConfigChange('bottom')"></select>
+          <span class="inc-label">i</span>
+          <select id="inc-bottom" onchange="onClockConfigChange('bottom')"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Loading…</div>
+
+    <div class="edit-banner" id="edit-banner">Edit mode — drag pieces, tap squares to use selected tool. Press Start Game when ready.</div>
+
+    <div class="picker" id="picker"></div>
+
+    <div class="histwrap">
+      <div class="histscroll" id="histscroll">
+        <div class="histrows" id="histrows">
+          <div class="histempty">No moves yet.</div>
+        </div>
+      </div>
+      <button class="copy-overlay" id="copy-btn" title="Copy moves">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="11" height="11" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toggle-wrap" id="toggle-wrap">
+      <div class="toggle-slider" id="toggle-slider"></div>
+      <button class="toggle-btn active" id="tab-unrated" onclick="setRated(false)">Unrated</button>
+      <button class="toggle-btn" id="tab-rated" onclick="setRated(true)">Rated</button>
+    </div>
+
+    <div class="ctrlrow">
+      <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
+      <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
+      <button class="btn" onclick="doFlip()">⇅ Flip</button>
+      <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
     </div>
   </div>
 
-  <div class="evalrow" id="evalrow">
-    <div class="evalbar"><div class="evalfill" id="ebar"></div></div>
-    <div class="evalnum" id="enum">0.0</div>
-  </div>
-
-  <div class="bwrap"><div id="board"></div></div>
-
-  <!-- Bottom Player Strip -->
-  <div class="pstrip" id="strip-bottom">
-    <div class="picon w" id="icon-bottom">♔</div>
-    <div class="pname" id="name-bottom">You</div>
-    <div class="prating" id="rtg-bottom">Human</div>
-    <span class="elo-delta" id="delta-bottom"></span>
-    <div class="pdots" id="dots-bottom"></div>
-    
-    <div class="clock-container">
-      <div class="clock-selector-wrap" id="wrap-bottom">
-        <select id="time-bottom" onchange="onClockConfigChange('bottom')"></select>
-        <span class="inc-label">i</span>
-        <select id="inc-bottom" onchange="onClockConfigChange('bottom')"></select>
-      </div>
-    </div>
-  </div>
-
-  <div class="status" id="status">Loading…</div>
-
-  <div class="edit-banner" id="edit-banner">Edit mode — drag pieces, tap squares to use selected tool. Press Start Game when ready.</div>
-
-  <div class="picker" id="picker"></div>
-
-  <div class="histwrap">
-    <div class="histscroll" id="histscroll">
-      <div class="histrows" id="histrows">
-        <div class="histempty">No moves yet.</div>
-      </div>
-    </div>
-    <button class="copy-overlay" id="copy-btn" title="Copy moves">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="9" y="9" width="11" height="11" rx="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="toggle-wrap" id="toggle-wrap">
-    <div class="toggle-slider" id="toggle-slider"></div>
-    <button class="toggle-btn active" id="tab-unrated" onclick="setRated(false)">Unrated</button>
-    <button class="toggle-btn" id="tab-rated" onclick="setRated(true)">Rated</button>
-  </div>
-
-  <div class="ctrlrow">
-    <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
-    <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
-    <button class="btn" onclick="doFlip()">⇅ Flip</button>
-    <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
+  <!-- Sidebar Memory Archive -->
+  <div class="sidebar">
+    <div class="archive-hdr">📋 Game Memory Logs</div>
+    <div class="archive-list" id="archive-list"></div>
   </div>
 </div>
 
@@ -341,6 +391,17 @@ body{
   </div>
 </div>
 
+<!-- Review archive item overlay -->
+<div class="review-ov" id="review-ov">
+  <div class="review-card">
+    <div class="review-title" id="rev-title">Saved Match</div>
+    <div id="rev-meta" style="font-size:12px; color:var(--text2);"></div>
+    <div style="font-size:11px; font-weight:bold; color:var(--accent); margin-top:4px;">Moves Text:</div>
+    <div class="review-box" id="rev-moves"></div>
+    <button class="btn pri" style="margin-top:8px;" onclick="document.getElementById('review-ov').classList.remove('on')">Close</button>
+  </div>
+</div>
+
 <script src="chess.min.js"></script>
 <script>
 'use strict';
@@ -349,9 +410,11 @@ function pieceImg(type, color) {
   return `./${type}${color}.png`;
 }
 
-// ── Persistent Elo with Hard Floor at 100 ─────────────────────
+// ── Persistent Game Memory State & Hard 100 Elo Floor ────────
 const ELO_KEY = 'chess_elo';
+const ARCHIVE_KEY = 'chess_history_archive';
 let memElo = 100;
+
 function getElo() {
   try {
     const v = parseInt(localStorage.getItem(ELO_KEY));
@@ -359,7 +422,7 @@ function getElo() {
   } catch (e) { return memElo; }
 }
 function setElo(v) {
-  v = Math.max(100, v); // Enforces that Elo can never go below 100
+  v = Math.max(100, v); // Absolute floor enforcement
   memElo = v;
   try { localStorage.setItem(ELO_KEY, String(v)); } catch (e) {}
   return v;
@@ -381,12 +444,12 @@ let pendingPromo = null;
 let rated       = false;
 let gameStarted = false;  
 
-// ── Time & Increments Control Variables ───────────────────────
+// ── Time Control Structures ──────────────────────────────────
 let clocks = { w: 600, b: 600 }; 
 let increments = { w: 0, b: 0 }; 
 let clockInterval = null;
 
-// ── Dual Memory Game Sessions ─────────────────────────────────
+// Mid-tab tracking memory slots
 let unratedSaveSlot = null;
 let ratedSaveSlot = null;
 
@@ -395,7 +458,7 @@ let dragPiece   = null;
 let pickerDrag  = null;
 let dragOffsetX = 0, dragOffsetY = 0;
 
-// Edit assets mode state
+// Custom Edit mode configurations
 let editMode    = false;
 let editBoard   = null;   
 let editTool    = null;   
@@ -434,12 +497,11 @@ function populateClockSelectors() {
     iBot.appendChild(new Option(s + "s", s));
   });
 
-  // Default values set to standard Blitz/Rapid profiles
   tTop.value = "10"; iTop.value = "0";
   tBot.value = "10"; iBot.value = "0";
 }
 
-// ── Stockfish UCI Controls ────────────────────────────────────
+// ── Stockfish UCI Engine Connection ──────────────────────────
 function loadStockfish() {
   return new Promise((resolve, reject) => {
     try {
@@ -476,7 +538,8 @@ function loadStockfish() {
 function applyEloToEngine() {
   if (!sf) return;
   try {
-    const uciElo = Math.min(3190, Math.max(1320, getElo()));
+    // FIX: Floor lowered to 100 to scale perfectly down to beginner levels
+    const uciElo = Math.min(3190, Math.max(100, getElo()));
     sf.postMessage('setoption name UCI_LimitStrength value true');
     sf.postMessage('setoption name UCI_Elo value ' + uciElo);
   } catch (e) {}
@@ -486,7 +549,11 @@ function sfGo(fen) {
   return new Promise(resolve => {
     sfResolve = resolve;
     sf.postMessage('position fen ' + fen);
-    sf.postMessage('go depth 18 movetime 1200');
+    
+    // FIX: Adaptive scaling depths prevent sub-400 Elo from acting like depth-18 monsters
+    const currentElo = getElo();
+    const dynamicDepth = currentElo < 400 ? 3 : (currentElo < 1000 ? 8 : 15);
+    sf.postMessage('go depth ' + dynamicDepth + ' movetime 600');
   });
 }
 
@@ -512,7 +579,7 @@ function stopClock() {
 }
 
 function onClockConfigChange(position) {
-  if (gameStarted) return; // Prevent adjustment mid-game
+  if (gameStarted) return; 
 
   const tTop = document.getElementById('time-top');
   const iTop = document.getElementById('inc-top');
@@ -520,7 +587,6 @@ function onClockConfigChange(position) {
   const iBot = document.getElementById('inc-bottom');
 
   if (rated) {
-    // Mirror values across both fields dynamically on rated configurations
     if (position === 'top') {
       tBot.value = tTop.value;
       iBot.value = iTop.value;
@@ -548,17 +614,12 @@ function renderClocks() {
   const tBot = document.getElementById('time-bottom');
   const iBot = document.getElementById('inc-bottom');
 
-  const wColor = 'w';
-  const bColor = 'b';
-  
-  const topColor = flipped ? wColor : bColor;
-  const botColor = flipped ? bColor : wColor;
+  const topColor = flipped ? 'w' : 'b';
+  const botColor = flipped ? 'b' : 'w';
 
-  // Render text inside dropdown elements natively
   tTop.options[tTop.selectedIndex].text = formatTime(clocks[topColor]);
   tBot.options[tBot.selectedIndex].text = formatTime(clocks[botColor]);
 
-  // Lock selectors during live gameplay so scroll wheels don't pop up misfiring
   tTop.disabled = gameStarted; iTop.disabled = gameStarted;
   tBot.disabled = gameStarted; iBot.disabled = gameStarted;
 
@@ -853,7 +914,6 @@ function doMove(from, to, promo) {
   const result = game.move({ from, to, promotion: promo || 'q' });
   if (!result) return;
 
-  // Add increment reward to the side that just moved successfully
   if (gameStarted) {
     clocks[activeTurn] += increments[activeTurn];
   }
@@ -916,7 +976,6 @@ async function doAI() {
       const promo = moveStr[4] || undefined;
       game.move({ from, to, promotion: promo });
       
-      // Award matching AI increment
       clocks[activeTurn] += increments[activeTurn];
       gameStarted = true;
       lastMv = { from: algToIdx(from), to: algToIdx(to) };
@@ -953,6 +1012,18 @@ function updateStatus() {
   if (game.in_check())                  setStatus(who + ' is in check!', 'alert');
   else if (game.turn() === playerColor) setStatus('Your turn · ' + who, '');
   else                                   setStatus('Stockfish · ' + who, '');
+}
+
+function getMoveHistoryString() {
+  const hist = game.history();
+  let text = '';
+  for (let i = 0; i < hist.length; i += 2) {
+    const mn = i / 2 + 1;
+    text += mn + '. ' + hist[i];
+    if (hist[i+1]) text += ' ' + hist[i+1];
+    text += ' ';
+  }
+  return text.trim() || "No moves recorded.";
 }
 
 function updateHist() {
@@ -1009,16 +1080,8 @@ function updateHist() {
 }
 
 document.getElementById('copy-btn').addEventListener('click', () => {
-  const hist = game.history();
-  if (!hist.length) return;
-  let text = '';
-  for (let i = 0; i < hist.length; i += 2) {
-    const mn = i / 2 + 1;
-    text += mn + '. ' + hist[i];
-    if (hist[i+1]) text += ' ' + hist[i+1];
-    text += ' ';
-  }
-  text = text.trim();
+  const text = getMoveHistoryString();
+  if (text === "No moves recorded.") return;
   const btn = document.getElementById('copy-btn');
   const doFlash = () => {
     btn.classList.add('copied');
@@ -1057,12 +1120,66 @@ function checkOver() {
   triggerGameOver(em, title, sub, eloChange);
 }
 
+// ── Persistent Game Memory Archive Logic ─────────────────────
+function archiveFinishedGame(type, outcomeText) {
+  try {
+    const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}),
+      type: type, // "rated" or "unrated"
+      outcome: outcomeText,
+      moves: getMoveHistoryString(),
+      fen: game.fen()
+    };
+    archive.unshift(newEntry); // Prepend to show latest first
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive));
+    renderArchiveList();
+  } catch(e) {}
+}
+
+function renderArchiveList() {
+  const container = document.getElementById('archive-list');
+  container.innerHTML = '';
+  try {
+    const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    if (archive.length === 0) {
+      container.innerHTML = '<div style="font-size:11px; color:var(--text2); text-align:center; padding:20px;">No saved games.</div>';
+      return;
+    }
+    archive.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'archive-item';
+      div.onclick = () => openArchiveReview(item);
+
+      div.innerHTML = `
+        <div class="archive-meta">
+          <span class="archive-tag ${item.type}">${item.type}</span>
+          <span class="archive-date">${item.date}</span>
+        </div>
+        <div class="archive-outcome">${item.outcome}</div>
+      `;
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:11px; color:var(--red); text-align:center;">Failed to load history.</div>';
+  }
+}
+
+function openArchiveReview(item) {
+  document.getElementById('rev-title').textContent = item.outcome;
+  document.getElementById('rev-meta').textContent = `${item.date} · Type: ${item.type.toUpperCase()}`;
+  document.getElementById('rev-moves').textContent = item.moves;
+  document.getElementById('review-ov').classList.add('on');
+}
+
 function triggerGameOver(em, title, sub, eloChange) {
   const ovElo = document.getElementById('ov-elo');
+  const modeTag = rated ? 'rated' : 'unrated';
   
   if (rated) {
     const oldElo = getElo();
-    const newElo = setElo(oldElo + eloChange); // Automatically enforces floor 100 via inner wrapper logic
+    const newElo = setElo(oldElo + eloChange); // Guaranteed floor of 100 inside setElo wrapper
     if (eloChange > 0) {
       ovElo.textContent = `+${eloChange} Elo → ${newElo}`;
       ovElo.className = 'ovelo up';
@@ -1082,9 +1199,12 @@ function triggerGameOver(em, title, sub, eloChange) {
     sub += " (Unrated Match)";
   }
 
+  // Commit game outcome details permanently into the Game Memory Archive log
+  archiveFinishedGame(modeTag, `${title} (${sub})`);
+
   document.getElementById('ov-em').textContent = em;
   document.getElementById('ov-t').textContent  = title;
-  document.getElementById('ov-s').textContent  = sub;
+  document.getElementById('ovs').textContent  = sub;
   setTimeout(() => document.getElementById('ov').classList.add('on'), 700);
 }
 
@@ -1106,11 +1226,14 @@ function refreshStrips() {
   document.getElementById('icon-bottom').textContent = topIsYou ? sfIcon : youIcon;
   document.getElementById('icon-bottom').className = 'picon ' + (topIsYou ? sfIconCls : youIconCls);
 
-  document.getElementById('rtg-top').textContent = topIsYou ? 'Elo ' + elo : 'Engine';
-  document.getElementById('rtg-bottom').textContent = topIsYou ? 'Engine' : 'Elo ' + elo;
+  // FIX: Both bars now display your Human persistent Elo to accurately communicate shared ratings
+  const dynamicRatingString = 'Elo ' + elo;
+  document.getElementById('rtg-top').textContent = dynamicRatingString;
+  document.getElementById('rtg-bottom').textContent = dynamicRatingString;
 
   const dots = document.getElementById('dots');
   const clockWrapTop = document.getElementById('wrap-top');
+  const wrapBot = document.getElementById('wrap-bottom');
   
   if (topIsYou) {
     document.getElementById('strip-bottom').insertBefore(dots, wrapBot);
@@ -1131,7 +1254,6 @@ function newGame() {
   aiThinking = false; pendingPromo = null;
   gameStarted = false;
   
-  // Re-pull configurations directly from setup pickers
   const tTop = document.getElementById('time-top');
   const iTop = document.getElementById('inc-top');
   const tBot = document.getElementById('time-bottom');
@@ -1201,12 +1323,11 @@ function doFlip() {
 
 function closeOv() { document.getElementById('ov').classList.remove('on'); }
 
-// ── Rated / Unrated Toggle with Restored Game Memory ─────────
+// ── Rated / Unrated Toggle with Retained State ───────────────
 function setRated(val) {
   if (rated === val) return; 
   if (editMode) { exitEditMode(false); }
 
-  // 1. Pack full game state into snapshot
   const snapshot = {
     fen: game.fen(),
     gameStarted: gameStarted,
@@ -1225,7 +1346,6 @@ function setRated(val) {
   if (rated) { ratedSaveSlot = snapshot; } 
   else { unratedSaveSlot = snapshot; }
 
-  // 2. Shift active environment definition
   rated = val;
   
   document.getElementById('tab-rated').classList.toggle('active', rated);
@@ -1234,7 +1354,6 @@ function setRated(val) {
   document.getElementById('toggle-slider').classList.toggle('right', rated);
   document.getElementById('evalrow').classList.toggle('hidden', rated);
 
-  // 3. Unpack slot memory state data safely
   const targetSlot = rated ? ratedSaveSlot : unratedSaveSlot;
 
   if (targetSlot) {
@@ -1264,7 +1383,6 @@ function setRated(val) {
       setTimeout(doAI, 300);
     }
   } else {
-    // Fresh run profile setup
     populateClockSelectors();
     newGame();
   }
@@ -1284,7 +1402,7 @@ function updateButtons() {
   document.getElementById('btn-new').textContent = editMode ? 'Start Game' : 'New Game';
 }
 
-// ── Custom Setup Setup Mode (Unrated Exclusive) ────────────────
+// ── Custom Position Setup Mode (Unrated Exclusive) ───────────
 function toggleEdit() {
   if (rated) return;
   if (editMode) { attemptStartFromEdit(); } 
@@ -1323,7 +1441,6 @@ function exitEditMode(applyBoard) {
   }
 }
 
-// ── Custom Mode Piece Asset Picker Builder ──────────────────────
 function buildPicker() {
   const picker = document.getElementById('picker');
   picker.innerHTML = '';
@@ -1441,7 +1558,7 @@ function attemptStartFromEdit() {
   game = testGame;
   lastMv = null; sel = null; hints = [];
   gameStarted = false;
-  onClockConfigChange('bottom'); // Force load times correctly on dynamic layout
+  onClockConfigChange('bottom'); 
   
   exitEditMode(true);
   refreshStrips();
@@ -1464,6 +1581,8 @@ if ('serviceWorker' in navigator) {
   buildBoard();
   refreshStrips();
   updateButtons();
+  renderArchiveList();
+  
   const bar = document.getElementById('lbar');
   const sub = document.getElementById('lsub');
   bar.style.width = '15%';
