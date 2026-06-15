@@ -43,6 +43,66 @@ body{
 .pdots i:nth-child(2){animation-delay:.18s}.pdots i:nth-child(3){animation-delay:.36s}
 @keyframes db{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
 
+/* Config Row: Elos & Times */
+.config-row {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.config-box {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.config-box label {
+  font-size: 10px;
+  color: var(--text2);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.config-input-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.config-box input[type="number"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+}
+.config-box input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.config-box .val-display {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: right;
+  color: var(--accent);
+}
+.chain-icon {
+  font-size: 12px;
+  color: var(--accent);
+  transition: opacity 0.2s;
+}
+.chain-icon.hidden {
+  opacity: 0;
+}
+
 /* Eval bar - unrated only */
 .evalrow{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .evalrow.hidden{display:none}
@@ -242,6 +302,25 @@ body{
 
   <div class="bwrap"><div id="board"></div></div>
 
+  <div class="config-row">
+    <div class="config-box">
+      <label>Stockfish Strength</label>
+      <div class="config-input-group">
+        <input type="range" id="sf-elo-slider" min="100" max="3000" step="50" value="1400" oninput="onSfSliderInput(this.value)">
+        <span class="val-display" id="sf-slider-lbl">1400</span>
+      </div>
+    </div>
+    <div class="config-box">
+      <label>Time Controls (Min / Inc)</label>
+      <div class="config-input-group">
+        <input type="number" id="time-p" value="10" min="1" max="180" oninput="onTimeChange('p', this.value)">
+        <span class="chain-icon" id="chain-link">🔗</span>
+        <input type="number" id="time-sf" value="10" min="1" max="180" oninput="onTimeChange('sf', this.value)">
+        <input type="number" id="time-inc" value="5" min="0" max="60" style="width:50px;" placeholder="Inc">
+      </div>
+    </div>
+  </div>
+
   <div class="pstrip" id="strip-bottom">
     <div class="picon w" id="icon-bottom">♔</div>
     <div class="pname" id="name-bottom">You</div>
@@ -361,6 +440,9 @@ let editTool    = null;
 
 const PIECE_TYPES = ['q','r','b','n','p']; 
 
+// Custom Configuration State
+let selectedSfElo = 1400;
+
 // ── Coordinate helpers ────────────────────────────────────────
 function idxToAlg(idx) {
   const col = idx % 8;
@@ -414,7 +496,7 @@ function loadStockfish() {
 function applyEloToEngine() {
   if (!sf) return;
   try {
-    const uciElo = Math.min(3190, Math.max(1320, getElo()));
+    const uciElo = Math.min(3190, Math.max(1320, selectedSfElo));
     sf.postMessage('setoption name UCI_LimitStrength value true');
     sf.postMessage('setoption name UCI_Elo value ' + uciElo);
   } catch (e) {
@@ -425,7 +507,14 @@ function sfGo(fen) {
   return new Promise(resolve => {
     sfResolve = resolve;
     sf.postMessage('position fen ' + fen);
-    sf.postMessage('go depth 18 movetime 1200');
+    
+    // Pass user selected time values down into stockfish calculation keys
+    const sfMin = parseInt(document.getElementById('time-sf').value) || 10;
+    const incSec = parseInt(document.getElementById('time-inc').value) || 0;
+    const sfTimeMs = sfMin * 60 * 1000;
+    const incMs = incSec * 1000;
+    
+    sf.postMessage(`go btime ${sfTimeMs} binc ${incMs} wtime ${sfTimeMs} winc ${incMs}`);
   });
 }
 
@@ -800,6 +889,49 @@ function setStatus(msg, cls) {
   el.className   = 'status' + (cls ? ' ' + cls : '');
 }
 
+// ── Config Logic Controls (Elo Matcher + Links) ───────────────
+function calculateEloBounds() {
+  const currentElo = getElo();
+  let minElo = Math.floor(currentElo / 100) * 100;
+  let maxElo = Math.ceil(currentElo / 100) * 100;
+
+  // Perfect multiple scenario fix: auto map 100 points below and above
+  if (minElo === maxElo) {
+    minElo = currentElo - 100;
+    maxElo = currentElo + 100;
+  }
+
+  const slider = document.getElementById('sf-elo-slider');
+  if (rated) {
+    slider.min = minElo;
+    slider.max = maxElo;
+    if (selectedSfElo < minElo) selectedSfElo = minElo;
+    if (selectedSfElo > maxElo) selectedSfElo = maxElo;
+  } else {
+    slider.min = 100;
+    slider.max = 3000;
+  }
+  slider.value = selectedSfElo;
+  document.getElementById('sf-slider-lbl').textContent = selectedSfElo;
+  
+  if (sfReady) applyEloToEngine();
+}
+
+function onSfSliderInput(val) {
+  selectedSfElo = parseInt(val);
+  document.getElementById('sf-slider-lbl').textContent = val;
+  if (sfReady) applyEloToEngine();
+}
+
+function onTimeChange(player, val) {
+  if (!rated) return; // Independent tracking in unrated mode
+  if (player === 'p') {
+    document.getElementById('time-sf').value = val;
+  } else {
+    document.getElementById('time-p').value = val;
+  }
+}
+
 // ── Update labels and dot locations safely ────────────────────
 function refreshStrips() {
   const youAreWhite = playerColor === 'w';
@@ -825,8 +957,8 @@ function refreshStrips() {
   document.getElementById('icon-bottom').textContent = botIconC;
   document.getElementById('icon-bottom').className = 'picon ' + botIconCl;
 
-  document.getElementById('rtg-top').textContent = 'Elo ' + elo;
-  document.getElementById('rtg-bottom').textContent = 'Elo ' + elo;
+  document.getElementById('rtg-top').textContent = 'Elo ' + (topIsYou ? elo : selectedSfElo);
+  document.getElementById('rtg-bottom').textContent = 'Elo ' + (topIsYou ? selectedSfElo : elo);
 
   const dots = document.getElementById('dots');
   if (dots) {
@@ -847,7 +979,7 @@ function updateStatus() {
   const who = game.turn() === 'w' ? 'White' : 'Black';
   if (game.in_check())                  setStatus(who + ' is in check!', 'alert');
   else if (game.turn() === playerColor) setStatus('Your turn · ' + who, '');
-  else                                   setStatus('Stockfish · ' + who, '');
+  else                                  setStatus('Stockfish · ' + who, '');
 }
 
 // ── Move history ─────────────────────────────
@@ -943,88 +1075,100 @@ function checkOver() {
   let em, title, sub, eloChange = 0;
 
   if (game.in_checkmate()) {
-    const won = game.turn() !== playerColor;
-    em    = won ? '🏆' : '💀';
-    title = won ? 'You Win!' : 'Stockfish Wins';
-    sub   = 'Checkmate';
-    eloChange = won ? 30 : -30;
+    const loser = game.turn();
+    if (loser === playerColor) {
+      em = '😢'; title = 'Defeat'; sub = 'Stockfish delivers checkmate.';
+      if (rated) eloChange = -15;
+    } else {
+      em = '🏆'; title = 'Victory!'; sub = 'You delivered checkmate!';
+      if (rated) eloChange = 15;
+    }
   } else {
-    em    = '🤝';
-    title = 'Draw';
-    sub   = game.in_stalemate()            ? 'Stalemate'
-          : game.in_threefold_repetition() ? 'Threefold repetition'
-          : game.insufficient_material()   ? 'Insufficient material'
-          : '50-move rule';
-    eloChange = 0;
+    em = '🤝'; title = 'Draw'; sub = 'The game ended in a draw.';
   }
 
-  const ovElo = document.getElementById('ov-elo');
-  if (rated) {
-    const oldElo = getElo();
-    const newElo = setElo(oldElo + eloChange);
-    if (eloChange > 0) {
-      ovElo.textContent = `+${eloChange} Elo → ${newElo}`;
-      ovElo.className = 'ovelo up';
-    } else if (eloChange < 0) {
-      ovElo.textContent = `${eloChange} Elo → ${newElo}`;
-      ovElo.className = 'ovelo down';
-    } else {
-      ovElo.textContent = `Elo unchanged (${newElo})`;
-      ovElo.className = 'ovelo';
-    }
-    refreshStrips();
-    applyEloToEngine();
+  if (rated && eloChange !== 0) {
+    const newElo = setElo(getElo() + eloChange);
+    document.getElementById('ov-elo').textContent = `Elo: ${newElo} (${eloChange > 0 ? '+' : ''}${eloChange})`;
+    document.getElementById('ov-elo').className = 'ovelo ' + (eloChange > 0 ? 'up' : 'down');
   } else {
-    ovElo.textContent = 'Unrated — Elo unchanged';
-    ovElo.className = 'ovelo';
+    document.getElementById('ov-elo').textContent = '';
   }
 
   document.getElementById('ov-em').textContent = em;
-  document.getElementById('ov-t').textContent  = title;
-  document.getElementById('ov-s').textContent  = sub;
-  setTimeout(() => document.getElementById('ov').classList.add('on'), 700);
+  document.getElementById('ov-t').textContent = title;
+  document.getElementById('ov-s').textContent = sub;
+  document.getElementById('ov').classList.add('on');
 }
 
-// ── Controls ──────────────────────────────────────────────────
-function newGame() {
-  if (editMode) { exitEditMode(false); }
-  game = new Chess();
-  sel = null; hints = []; lastMv = null;
-  aiThinking = false; pendingPromo = null;
-  gameStarted = false;
-  if (sf) sf.postMessage('stop');
-  document.getElementById('dots').classList.remove('on');
-  document.getElementById('ebar').style.width = '50%';
-  document.getElementById('enum').textContent  = '0.0';
-  buildBoard();
-  updateHist();
-  updateButtons();
+function closeOv() {
+  document.getElementById('ov').classList.remove('on');
+}
 
-  if (flipped) {
-    playerColor = 'b';
+// ── Mode selection toggle event listeners ─────────────────────
+function setRated(val) {
+  rated = val;
+  const s = document.getElementById('toggle-slider');
+  const tu = document.getElementById('tab-unrated');
+  const tr = document.getElementById('tab-rated');
+  const eb = document.getElementById('evalrow');
+  const link = document.getElementById('chain-link');
+
+  if (rated) {
+    s.classList.add('right');
+    tr.classList.add('active', 'rated');
+    tu.classList.remove('active');
+    eb.classList.add('hidden');
+    link.classList.remove('hidden');
+    
+    // Equalize time inputs immediately when locking Rated Mode
+    document.getElementById('time-sf').value = document.getElementById('time-p').value;
   } else {
-    playerColor = 'w';
+    s.classList.remove('right');
+    tu.classList.add('active');
+    tr.classList.remove('active', 'rated');
+    eb.classList.remove('hidden');
+    link.classList.add('hidden');
   }
+  calculateEloBounds();
   refreshStrips();
+}
 
-  if (sfReady) {
-    updateStatus();
-    if (game.turn() !== playerColor) setTimeout(doAI, 300);
+// ── Game Management controls ─────────────────────────────────
+function onPrimaryBtn() {
+  if (editMode) {
+    // Save arrangement configurations from custom layouts
+    const fen = currentEditFen();
+    game = new Chess(fen);
+    editMode = false;
+    document.getElementById('btn-edit').classList.remove('active-edit');
+    document.getElementById('picker').classList.remove('on');
+    document.getElementById('edit-banner').classList.remove('on');
   }
+  newGame();
+}
+
+function newGame() {
+  game.reset();
+  lastMv = null;
+  sel = null;
+  hints = [];
+  gameStarted = false;
+  calculateEloBounds();
+  refreshStrips();
+  updateHist();
+  updateStatus();
+  updateButtons();
+  if (sfReady) applyEloToEngine();
 }
 
 function doUndo() {
-  if (rated) return;
-  if (editMode) return;
-  if (aiThinking) return;
-  if (sf) sf.postMessage('stop');
-  aiThinking = false;
-  document.getElementById('dots').classList.remove('on');
-  game.undo();
-  game.undo();
+  if (aiThinking || !gameStarted) return;
+  game.undo(); // Undo engine move
+  game.undo(); // Undo player move
   lastMv = null;
-  sel = null; hints = [];
-  gameStarted = game.history().length > 0;
+  sel = null;
+  hints = [];
   render();
   updateHist();
   updateStatus();
@@ -1033,258 +1177,165 @@ function doUndo() {
 
 function doFlip() {
   flipped = !flipped;
-  if (!gameStarted && game.history().length === 0 && !editMode) {
-    playerColor = playerColor === 'w' ? 'b' : 'w';
-    if (sfReady && game.turn() !== playerColor) {
-      setTimeout(doAI, 300);
-    }
-  }
+  playerColor = playerColor === 'w' ? 'b' : 'w';
   buildBoard();
   refreshStrips();
-  updateStatus();
-}
-
-function closeOv() { document.getElementById('ov').classList.remove('on'); }
-
-// ── Rated / Unrated toggle ───────────────────────────────────────
-function setRated(val) {
-  if (editMode && val !== rated) {
-    exitEditMode(false);
+  if (!game.game_over() && game.turn() !== playerColor) {
+    doAI();
   }
-  rated = val;
-  document.getElementById('tab-rated').classList.toggle('active', rated);
-  document.getElementById('tab-rated').classList.toggle('rated', rated);
-  document.getElementById('tab-unrated').classList.toggle('active', !rated);
-  document.getElementById('toggle-slider').classList.toggle('right', rated);
-
-  document.getElementById('evalrow').classList.toggle('hidden', rated);
-  updateButtons();
 }
 
-// ── Button enable/disable states ─────────────────────────────────
 function updateButtons() {
-  const undoBtn = document.getElementById('btn-undo');
-  undoBtn.disabled = rated || editMode;
-
-  const editBtn = document.getElementById('btn-edit');
-  editBtn.disabled = rated;
-  editBtn.classList.toggle('active-edit', editMode);
-
+  document.getElementById('btn-undo').disabled = editMode || aiThinking || !gameStarted || game.game_over();
+  document.getElementById('btn-edit').disabled = aiThinking || gameStarted;
   document.getElementById('btn-new').textContent = editMode ? 'Start Game' : 'New Game';
 }
 
-// ── Edit mode ─────────────────────────────────────────────────────
+// ── Layout Editor Mode Configurations ─────────────────────────
 function toggleEdit() {
-  if (rated) return;
-  if (editMode) {
-    attemptStartFromEdit();
-  } else {
-    enterEditMode();
-  }
-}
+  if (gameStarted || aiThinking) return;
+  editMode = !editMode;
+  sel = null; hints = [];
 
-function enterEditMode() {
-  editMode = true;
-  editTool = null;
-  editBoard = new Array(64).fill(null);
-  for (let i = 0; i < 64; i++) {
-    const p = game.get(idxToAlg(i));
-    editBoard[i] = p ? { type: p.type, color: p.color } : null;
-  }
-  sel = null; hints = []; lastMv = null;
-  document.getElementById('edit-banner').classList.add('on');
-  buildPicker();
-  document.getElementById('picker').classList.add('on');
-  document.getElementById('evalrow').classList.add('hidden');
-  updateButtons();
-  updateStatus();
-  render();
-}
-
-function exitEditMode(applyBoard) {
-  editMode = false;
-  editTool = null;
-  document.getElementById('edit-banner').classList.remove('on');
-  document.getElementById('picker').classList.remove('on');
-  document.getElementById('evalrow').classList.toggle('hidden', rated);
-  updateButtons();
-  if (!applyBoard) {
-    render();
-    updateStatus();
-  }
-}
-
-function buildPicker() {
+  const btn = document.getElementById('btn-edit');
   const picker = document.getElementById('picker');
-  picker.innerHTML = '';
-  ['w','b'].forEach(color => {
-    const row = document.createElement('div');
-    row.className = 'picker-row';
-    PIECE_TYPES.forEach(t => {
-      const btn = document.createElement('button');
-      btn.className = 'picker-piece';
-      const img = document.createElement('img');
-      img.src = pieceImg(t, color);
-      img.draggable = false;
-      btn.appendChild(img);
-      btn.onclick = () => selectEditTool({ type: t, color });
-      btn.addEventListener('pointerdown', (e) => onPickerDragStart(e, t, color));
-      row.appendChild(btn);
-    });
-    if (color === 'b') {
-      const trash = document.createElement('button');
-      trash.className = 'picker-trash';
-      trash.textContent = '🗑';
-      trash.onclick = () => selectEditTool('trash');
-      row.appendChild(trash);
+  const banner = document.getElementById('edit-banner');
+
+  if (editMode) {
+    btn.classList.add('active-edit');
+    picker.classList.add('on');
+    banner.classList.add('on');
+    setupPicker();
+    
+    // Read active live position map arrays
+    editBoard = Array(64).fill(null);
+    for(let i=0; i<64; i++) {
+      const p = game.get(idxToAlg(i));
+      if (p) editBoard[i] = { type: p.type, color: p.color };
     }
-    picker.appendChild(row);
-  });
+  } else {
+    btn.classList.remove('active-edit');
+    picker.classList.remove('on');
+    banner.classList.remove('on');
+    editBoard = null;
+    editTool = null;
+  }
+  render();
+  updateStatus();
+  updateButtons();
 }
 
-function selectEditTool(tool) {
-  const sameTool = (editTool === 'trash' && tool === 'trash') ||
-    (typeof tool === 'object' && typeof editTool === 'object' && editTool &&
-     tool.type === editTool.type && tool.color === editTool.color);
-  editTool = sameTool ? null : tool;
+function setupPicker() {
+  const p = document.getElementById('picker');
+  p.innerHTML = '';
+  
+  const r1 = document.createElement('div'); r1.className = 'picker-row';
+  const r2 = document.createElement('div'); r2.className = 'picker-row';
 
-  document.querySelectorAll('.picker-piece, .picker-trash').forEach(el => el.classList.remove('sel'));
-  if (editTool) {
-    document.querySelectorAll('.picker-piece, .picker-trash').forEach(el => {
-      const img = el.querySelector('img');
-      if (editTool === 'trash' && el.classList.contains('picker-trash')) el.classList.add('sel');
-      if (img && typeof editTool === 'object') {
-        const src = pieceImg(editTool.type, editTool.color);
-        if (img.getAttribute('src') === src) el.classList.add('sel');
-      }
-    });
+  // Include selectable grid items
+  const items = [
+    {type:'p', color:'w'}, {type:'n', color:'w'}, {type:'b', color:'w'}, {type:'r', color:'w'}, {type:'q', color:'w'}, {type:'k', color:'w'},
+    {type:'p', color:'b'}, {type:'n', color:'b'}, {type:'b', color:'b'}, {type:'r', color:'b'}, {type:'q', color:'b'}, {type:'k', color:'b'}
+  ];
+
+  items.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'picker-piece';
+    const img = document.createElement('img');
+    img.src = pieceImg(item.type, item.color);
+    div.appendChild(img);
+    
+    div.addEventListener('pointerdown', (e) => onPickerDragStart(e, item.type, item.color));
+    div.onclick = () => selectEditTool(idx, item);
+    if (idx < 6) r1.appendChild(div); else r2.appendChild(div);
+  });
+
+  const trash = document.createElement('div');
+  trash.className = 'picker-trash';
+  trash.textContent = '🗑️';
+  trash.onclick = () => selectEditTool(12, {type:'trash'});
+  r2.appendChild(trash);
+
+  p.appendChild(r1);
+  p.appendChild(r2);
+}
+
+function selectEditTool(idx, tool) {
+  const elements = document.querySelectorAll('.picker-piece, .picker-trash');
+  elements.forEach(e => e.classList.remove('sel'));
+
+  if (editTool && editTool.idx === idx) {
+    editTool = null;
+  } else {
+    editTool = { idx, tool };
+    elements[idx].classList.add('sel');
+  }
+}
+
+function onEditSqClick(idx) {
+  if (!editTool) return;
+  if (editTool.tool.type === 'trash') {
+    editBoard[idx] = null;
+  } else {
+    placeEditPiece(idx, editTool.tool.type, editTool.tool.color);
   }
   render();
 }
 
 function placeEditPiece(idx, type, color) {
+  // Enforce structural limits of unique item counts (Kings)
   if (type === 'k') {
-    const existingIdx = editBoard.findIndex(p => p && p.type === 'k' && p.color === color);
-    if (existingIdx !== -1 && existingIdx !== idx) {
-      editBoard[existingIdx] = null;
+    for (let i = 0; i < 64; i++) {
+      if (editBoard[i] && editBoard[i].type === 'k' && editBoard[i].color === color) editBoard[i] = null;
     }
   }
   editBoard[idx] = { type, color };
 }
 
-function onEditSqClick(idx) {
-  if (editTool === null) return;
-  if (editTool === 'trash') {
-    const p = editBoard[idx];
-    if (p && p.type === 'k') return;
-    editBoard[idx] = null;
-  } else {
-    placeEditPiece(idx, editTool.type, editTool.color);
-  }
-  render();
-}
-
-function editBoardToFen(turn) {
+function currentEditFen() {
   let rows = [];
   for (let r = 0; r < 8; r++) {
-    let row = '';
     let empty = 0;
+    let rowStr = '';
     for (let c = 0; c < 8; c++) {
-      const p = editBoard[r*8+c];
-      if (!p) { empty++; continue; }
-      if (empty) { row += empty; empty = 0; }
-      row += p.color === 'w' ? p.type.toUpperCase() : p.type;
+      const p = editBoard[r * 8 + c];
+      if (!p) {
+        empty++;
+      } else {
+        if (empty > 0) { rowStr += empty; empty = 0; }
+        rowStr += p.color === 'w' ? p.type.toUpperCase() : p.type.toLowerCase();
+      }
     }
-    if (empty) row += empty;
-    rows.push(row);
+    if (empty > 0) rowStr += empty;
+    rows.push(rowStr);
   }
-  return rows.join('/') + ` ${turn} - - 0 1`;
+  // Construct standard valid generic active dynamic layout template strings
+  return rows.join('/') + ` ${game.turn()} KQkq - 0 1`;
 }
 
-function onPrimaryBtn() {
-  if (editMode) {
-    attemptStartFromEdit();
-  } else {
-    newGame();
-  }
-}
-
-function attemptStartFromEdit() {
-  const wKings = editBoard.filter(p => p && p.type === 'k' && p.color === 'w').length;
-  const bKings = editBoard.filter(p => p && p.type === 'k' && p.color === 'b').length;
-  if (wKings !== 1 || bKings !== 1) {
-    setStatus('Board needs exactly one king for each side', 'danger');
-    return;
-  }
-
-  const fenTurn = playerColor;
-  const testFen = editBoardToFen(fenTurn);
-
-  let testGame;
-  try {
-    testGame = new Chess(testFen);
-  } catch(e) {
-    setStatus('Invalid position', 'danger');
-    return;
-  }
-  if (!testGame || testGame.fen().split(' ')[0] !== testFen.split(' ')[0]) {
-    setStatus('Invalid position', 'danger');
-    return;
-  }
-  if (testGame.in_check() || testGame.in_checkmate()) {
-    setStatus('Starting position cannot be in check or checkmate', 'danger');
-    return;
-  }
-
-  game = testGame;
-  lastMv = null; sel = null; hints = [];
-  gameStarted = false;
-  exitEditMode(true);
-  refreshStrips();
+// ── Startup sequence execution hooks ──────────────────────────
+(async function init() {
   buildBoard();
-  updateHist();
-  updateStatus();
-
-  if (game.turn() !== playerColor && sfReady) {
-    setTimeout(doAI, 300);
-  }
-}
-
-// ── Boot ──────────────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
-
-(async () => {
-  buildBoard();
-  refreshStrips();
-  updateButtons();
-  const bar = document.getElementById('lbar');
-  const sub = document.getElementById('lsub');
-  bar.style.width = '15%';
-
-  let prog = 15;
-  const tick = setInterval(() => {
-    prog = Math.min(prog + 4, 88);
-    bar.style.width = prog + '%';
-  }, 180);
+  calculateEloBounds();
+  
+  const lbar = document.getElementById('lbar');
+  const lsub = document.getElementById('lsub');
 
   try {
+    lbar.style.width = '40%';
+    lsub.textContent = 'Configuring scripts…';
+    lbar.style.width = '80%';
     await loadStockfish();
-    clearInterval(tick);
-    bar.style.width = '100%';
-    sub.textContent = 'Ready!';
-    await new Promise(r => setTimeout(r, 320));
-    document.getElementById('loading').classList.add('hide');
-    updateStatus();
-  } catch(err) {
-    clearInterval(tick);
-    bar.style.background = 'var(--red)';
-    sub.textContent = 'Failed to load engine. Make sure all files are in the same folder.';
+    lbar.style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('loading').classList.add('hide');
+      newGame();
+    }, 200);
+  } catch(e) {
+    lsub.textContent = 'Load error: verify asset local structure paths.';
+    console.error(e);
   }
 })();
-
-window.addEventListener('resize', buildBoard);
 </script>
 </body>
 </html>
