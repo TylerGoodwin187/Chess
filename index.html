@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chess">
-<title>Chess with Clocks</title>
+<title>Chess</title>
 <style>
 :root {
   --bg:#111112; --surface:#1c1c1e; --surface2:#2c2c2e; --border:#38383a;
@@ -26,47 +26,8 @@ body{
 .hdr-title{font-size:15px;font-weight:700}
 .hdr-title span{color:var(--accent)}
 
-/* Main Layout Split */
-.main-layout {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  overflow: hidden;
-}
-.game-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 6px 10px 8px;
-  gap: 5px;
-  overflow: hidden;
-  min-width: 0;
-}
-.sidebar {
-  width: 260px;
-  border-left: 1px solid var(--border);
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-@media (max-width: 700px) {
-  .main-layout { flex-direction: column; overflow-y: auto; }
-  .sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); height: 220px; flex-shrink: 0; }
-}
-
-/* Sidebar Memory Archive Styling */
-.archive-hdr { padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); background: var(--surface2); }
-.archive-list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
-.archive-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; transition: background 0.15s; }
-.archive-item:hover { background: #3a3a3c; }
-.archive-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
-.archive-tag { font-weight: 700; border-radius: 3px; padding: 1px 4px; font-size: 9px; text-transform: uppercase; }
-.archive-tag.rated { background: var(--accent); color: #111; }
-.archive-tag.unrated { background: var(--border); color: var(--text2); }
-.archive-date { color: var(--text2); }
-.archive-outcome { font-size: 12px; font-weight: bold; }
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 10px 8px;gap:5px;overflow:hidden;min-height:0}
 
 /* Player strips */
 .pstrip{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface);border-radius:10px;border:1px solid var(--border);flex-shrink:0}
@@ -77,29 +38,12 @@ body{
 .elo-delta{font-size:11px;font-weight:700;margin-left:4px}
 .elo-delta.up{color:var(--green)}
 .elo-delta.down{color:var(--red)}
-.pdots{display:none;gap:3px}
-.pdots.on{display:flex}
+.pdots{display:none;gap:3px}.pdots.on{display:flex}
 .pdots i{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:db 1.1s infinite}
 .pdots i:nth-child(2){animation-delay:.18s}.pdots i:nth-child(3){animation-delay:.36s}
 @keyframes db{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
 
-/* Configurable Native Scroll Container for Clocks */
-.clock-container{display:flex;align-items:center;gap:4px}
-.clock-selector-wrap{position:relative;display:flex;align-items:center;background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:2px 4px}
-.clock-selector-wrap.running{background:var(--accent);border-color:transparent}
-.clock-selector-wrap.running select{color:#111;font-weight:700}
-.clock-selector-wrap.low{background:var(--red);animation:flash-clock 0.5s infinite alternate}
-.clock-selector-wrap.low select{color:#fff}
-.clock-selector-wrap select{
-  background:transparent;color:var(--text);border:none;font-size:14px;font-weight:700;
-  font-variant-numeric:tabular-nums;outline:none;cursor:pointer;
-  -webkit-appearance:none;-moz-appearance:none;appearance:none;padding-right:2px;
-}
-.inc-label{font-size:10px;color:var(--text2);font-weight:bold;margin-left:2px}
-
-@keyframes flash-clock{from{opacity:1}to{opacity:0.6}}
-
-/* Eval bar */
+/* Eval bar - unrated only */
 .evalrow{width:100%;max-width:420px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .evalrow.hidden{display:none}
 .evalbar{flex:1;height:5px;background:#2a2520;border-radius:3px;overflow:hidden}
@@ -144,7 +88,7 @@ body{
 .status.alert{color:var(--accent);font-weight:600}
 .status.danger{color:var(--red);font-weight:600}
 
-/* Move list */
+/* Move list - two rows zig-zag, copy overlay */
 .histwrap{
   width:100%;max-width:420px;position:relative;flex-shrink:0;
   background:var(--surface);border:1px solid var(--border);border-radius:9px;
@@ -202,7 +146,7 @@ body{
 .toggle-btn.active{color:var(--text)}
 .toggle-btn.active.rated{color:var(--accent)}
 
-/* Piece picker */
+/* Piece picker for edit mode */
 .picker{
   width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);
   border-radius:10px;padding:8px;display:none;flex-shrink:0;
@@ -215,6 +159,7 @@ body{
   background:var(--surface2);cursor:pointer;padding:4px;transition:transform .1s;
   touch-action:none;
 }
+.picker-piece:active{transform:scale(.9)}
 .picker-piece.sel{border-color:var(--accent);background:rgba(232,196,74,.15)}
 .picker-piece img{width:100%;height:100%;object-fit:contain}
 .picker-trash{
@@ -223,6 +168,7 @@ body{
   font-size:18px;transition:transform .1s;
 }
 .picker-trash.sel{border-color:var(--red);background:rgba(224,85,85,.15)}
+.picker-trash:active{transform:scale(.9)}
 
 /* Promotion */
 .promo-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:150;align-items:center;justify-content:center}
@@ -235,27 +181,21 @@ body{
   background:var(--surface2);cursor:pointer;padding:6px;
   transition:transform .1s;
 }
+.promo-btn:active{transform:scale(.9)}
 .promo-btn img{width:100%;height:100%;object-fit:contain}
 
-/* Game over overlay */
+/* Game over */
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99;align-items:center;justify-content:center}
 .ov.on{display:flex}
 .ovc{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;text-align:center;max-width:290px;width:88%}
-.ovem{font-size:52px;margin-bottom:10px}
-.ovt{font-size:22px;font-weight:700;margin-bottom:5px}
+.ovem{font-size:52px;margin-bottom:10px}.ovt{font-size:22px;font-weight:700;margin-bottom:5px}
 .ovs{font-size:13px;color:var(--text2);margin-bottom:8px}
 .ovelo{font-size:14px;font-weight:700;margin-bottom:22px}
 .ovelo.up{color:var(--green)}
 .ovelo.down{color:var(--red)}
 .ovbtns{display:flex;flex-direction:column;gap:9px}
 
-/* Review Game Archive Overlay */
-.review-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:160; align-items:center; justify-content:center; }
-.review-ov.on { display:flex; }
-.review-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; width:90%; max-width:380px; display:flex; flex-direction:column; gap:12px; }
-.review-title { font-size:16px; font-weight:700; color:var(--accent); }
-.review-box { max-height:160px; overflow-y:auto; background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; font-size:13px; line-height:1.5; color:var(--text); word-break: break-word; user-select: text; -webkit-user-select: text;}
-
+/* Edit mode banner */
 .edit-banner{
   width:100%;max-width:420px;background:rgba(232,196,74,.12);border:1px solid var(--accent);
   border-radius:9px;padding:6px 10px;font-size:11px;color:var(--accent);text-align:center;
@@ -286,91 +226,63 @@ body{
   <div class="hdr-title">♟ <span>Chess</span></div>
 </div>
 
-<div class="main-layout">
-  <div class="game-container">
-    <!-- Top Player Strip -->
-    <div class="pstrip" id="strip-top">
-      <div class="picon b" id="icon-top">♚</div>
-      <div class="pname" id="name-top">Stockfish</div>
-      <div class="prating" id="rtg-top">Elo 100</div>
-      <span class="elo-delta" id="delta-top"></span>
-      <div class="pdots" id="dots"><i></i><i></i><i></i></div>
-      
-      <div class="clock-container">
-        <div class="clock-selector-wrap" id="wrap-top">
-          <select id="time-top" onchange="onClockConfigChange('top')"></select>
-          <span class="inc-label">i</span>
-          <select id="inc-top" onchange="onClockConfigChange('top')"></select>
-        </div>
-      </div>
-    </div>
-
-    <div class="evalrow" id="evalrow">
-      <div class="evalbar"><div class="evalfill" id="ebar"></div></div>
-      <div class="evalnum" id="enum">0.0</div>
-    </div>
-
-    <div class="bwrap"><div id="board"></div></div>
-
-    <!-- Bottom Player Strip -->
-    <div class="pstrip" id="strip-bottom">
-      <div class="picon w" id="icon-bottom">♔</div>
-      <div class="pname" id="name-bottom">You</div>
-      <div class="prating" id="rtg-bottom">Elo 100</div>
-      <span class="elo-delta" id="delta-bottom"></span>
-      <div class="pdots" id="dots-bottom"></div>
-      
-      <div class="clock-container">
-        <div class="clock-selector-wrap" id="wrap-bottom">
-          <select id="time-bottom" onchange="onClockConfigChange('bottom')"></select>
-          <span class="inc-label">i</span>
-          <select id="inc-bottom" onchange="onClockConfigChange('bottom')"></select>
-        </div>
-      </div>
-    </div>
-
-    <div class="status" id="status">Loading…</div>
-
-    <div class="edit-banner" id="edit-banner">Edit mode — drag pieces, tap squares to use selected tool. Press Start Game when ready.</div>
-
-    <div class="picker" id="picker"></div>
-
-    <div class="histwrap">
-      <div class="histscroll" id="histscroll">
-        <div class="histrows" id="histrows">
-          <div class="histempty">No moves yet.</div>
-        </div>
-      </div>
-      <button class="copy-overlay" id="copy-btn" title="Copy moves">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="11" height="11" rx="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="toggle-wrap" id="toggle-wrap">
-      <div class="toggle-slider" id="toggle-slider"></div>
-      <button class="toggle-btn active" id="tab-unrated" onclick="setRated(false)">Unrated</button>
-      <button class="toggle-btn" id="tab-rated" onclick="setRated(true)">Rated</button>
-    </div>
-
-    <div class="ctrlrow">
-      <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
-      <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
-      <button class="btn" onclick="doFlip()">⇅ Flip</button>
-      <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
-    </div>
+<div class="main">
+  <div class="pstrip" id="strip-top">
+    <div class="picon b" id="icon-top">♚</div>
+    <div class="pname" id="name-top">Stockfish</div>
+    <div class="prating" id="rtg-top">Elo 100</div>
+    <span class="elo-delta" id="delta-top"></span>
+    <div class="pdots" id="dots"><i></i><i></i><i></i></div>
   </div>
 
-  <!-- Sidebar Memory Archive -->
-  <div class="sidebar">
-    <div class="archive-hdr">📋 Game Memory Logs</div>
-    <div class="archive-list" id="archive-list"></div>
+  <div class="evalrow" id="evalrow">
+    <div class="evalbar"><div class="evalfill" id="ebar"></div></div>
+    <div class="evalnum" id="enum">0.0</div>
+  </div>
+
+  <div class="bwrap"><div id="board"></div></div>
+
+  <div class="pstrip" id="strip-bottom">
+    <div class="picon w" id="icon-bottom">♔</div>
+    <div class="pname" id="name-bottom">You</div>
+    <div class="prating" id="rtg-bottom">Human</div>
+    <span class="elo-delta" id="delta-bottom"></span>
+  </div>
+
+  <div class="status" id="status">Loading…</div>
+
+  <div class="edit-banner" id="edit-banner">Edit mode — drag pieces, tap squares to use selected tool. Press Start Game when ready.</div>
+
+  <div class="picker" id="picker"></div>
+
+  <div class="histwrap">
+    <div class="histscroll" id="histscroll">
+      <div class="histrows" id="histrows">
+        <div class="histempty">No moves yet.</div>
+      </div>
+    </div>
+    <button class="copy-overlay" id="copy-btn" title="Copy moves">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="11" height="11" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="toggle-wrap" id="toggle-wrap">
+    <div class="toggle-slider" id="toggle-slider"></div>
+    <button class="toggle-btn active" id="tab-unrated" onclick="setRated(false)">Unrated</button>
+    <button class="toggle-btn" id="tab-rated" onclick="setRated(true)">Rated</button>
+  </div>
+
+  <div class="ctrlrow">
+    <button class="btn" id="btn-undo" onclick="doUndo()">← Undo</button>
+    <button class="btn" id="btn-edit" onclick="toggleEdit()">✎ Edit</button>
+    <button class="btn" onclick="doFlip()">⇅ Flip</button>
+    <button class="btn pri" id="btn-new" onclick="onPrimaryBtn()">New Game</button>
   </div>
 </div>
 
-<!-- Promotion picker -->
 <div class="promo-ov" id="promo-ov">
   <div class="promo-card">
     <div class="promo-title">Promote to…</div>
@@ -378,7 +290,6 @@ body{
   </div>
 </div>
 
-<!-- Game over -->
 <div class="ov" id="ov">
   <div class="ovc">
     <div class="ovem" id="ov-em"></div>
@@ -392,44 +303,37 @@ body{
   </div>
 </div>
 
-<!-- Review archive item overlay -->
-<div class="review-ov" id="review-ov">
-  <div class="review-card">
-    <div class="review-title" id="rev-title">Saved Match</div>
-    <div id="rev-meta" style="font-size:12px; color:var(--text2);"></div>
-    <div style="font-size:11px; font-weight:bold; color:var(--accent); margin-top:4px;">Moves Text:</div>
-    <div class="review-box" id="rev-moves"></div>
-    <button class="btn pri" style="margin-top:8px;" onclick="document.getElementById('review-ov').classList.remove('on')">Close</button>
-  </div>
-</div>
-
 <script src="chess.min.js"></script>
 <script>
 'use strict';
 
+// ── Piece image map ───────────────────────────────────────────
 function pieceImg(type, color) {
   return `./${type}${color}.png`;
 }
 
-// ── Persistent Game Memory State & Hard 100 Elo Floor ────────
+// ── Persistent Elo ────────────────────────────────────────────
 const ELO_KEY = 'chess_elo';
-const ARCHIVE_KEY = 'chess_history_archive';
 let memElo = 100;
-
 function getElo() {
   try {
     const v = parseInt(localStorage.getItem(ELO_KEY));
-    return isNaN(v) ? memElo : Math.max(100, v);
-  } catch (e) { return memElo; }
+    return isNaN(v) ? memElo : v;
+  } catch (e) {
+    return memElo;
+  }
 }
 function setElo(v) {
-  v = Math.max(100, v); 
+  v = Math.max(0, v);
   memElo = v;
-  try { localStorage.setItem(ELO_KEY, String(v)); } catch (e) {}
+  try {
+    localStorage.setItem(ELO_KEY, String(v));
+  } catch (e) {
+  }
   return v;
 }
 
-// ── Core Game Engine State ─────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────
 let game        = new Chess();
 let sf          = null;
 let sfReady     = false;
@@ -445,27 +349,19 @@ let pendingPromo = null;
 let rated       = false;
 let gameStarted = false;  
 
-// ── Time Control Structures ──────────────────────────────────
-let clocks = { w: 600, b: 600 }; 
-let increments = { w: 0, b: 0 }; 
-let clockInterval = null;
-
-// Mid-tab tracking memory slots
-let unratedSaveSlot = null;
-let ratedSaveSlot = null;
-
-// Drag assets state
+// Drag state
 let dragPiece   = null;
 let pickerDrag  = null;
 let dragOffsetX = 0, dragOffsetY = 0;
 
-// Custom Edit mode configurations
+// Edit mode state
 let editMode    = false;
 let editBoard   = null;   
 let editTool    = null;   
 
 const PIECE_TYPES = ['q','r','b','n','p']; 
 
+// ── Coordinate helpers ────────────────────────────────────────
 function idxToAlg(idx) {
   const col = idx % 8;
   const row = Math.floor(idx / 8);
@@ -475,34 +371,7 @@ function algToIdx(alg) {
   return (8 - parseInt(alg[1])) * 8 + (alg.charCodeAt(0) - 97);
 }
 
-// ── Build Wheel Scroll Dropdowns ─────────────────────────────
-const minuteOptions = [1, 2, 3, 5, 10, 15, 30, 45, 60];
-const incrementOptions = [0, 1, 2, 5, 10, 15, 30, 60];
-
-function populateClockSelectors() {
-  const tTop = document.getElementById('time-top');
-  const iTop = document.getElementById('inc-top');
-  const tBot = document.getElementById('time-bottom');
-  const iBot = document.getElementById('inc-bottom');
-
-  tTop.innerHTML = ''; iTop.innerHTML = '';
-  tBot.innerHTML = ''; iBot.innerHTML = '';
-
-  minuteOptions.forEach(m => {
-    tTop.appendChild(new Option(m + "m", m));
-    tBot.appendChild(new Option(m + "m", m));
-  });
-
-  incrementOptions.forEach(s => {
-    iTop.appendChild(new Option(s + "s", s));
-    iBot.appendChild(new Option(s + "s", s));
-  });
-
-  tTop.value = "10"; iTop.value = "0";
-  tBot.value = "10"; iBot.value = "0";
-}
-
-// ── Stockfish UCI Engine Connection ──────────────────────────
+// ── Stockfish ─────────────────────────────────────────────────
 function loadStockfish() {
   return new Promise((resolve, reject) => {
     try {
@@ -511,7 +380,11 @@ function loadStockfish() {
 
     sf.onmessage = ({ data: line }) => {
       if (typeof line !== 'string') return;
-      if (line === 'readyok') { sfReady = true; resolve(); }
+
+      if (line === 'readyok') {
+        sfReady = true;
+        resolve();
+      }
 
       if (line.startsWith('info') && line.includes('score')) {
         const cp   = line.match(/score cp (-?\d+)/);
@@ -523,11 +396,13 @@ function loadStockfish() {
           updateEvalBar(parseInt(mate[1]) > 0 ? 50 : -50);
         }
       }
+
       if (line.startsWith('bestmove') && sfResolve) {
         sfResolve(line.split(' ')[1]);
         sfResolve = null;
       }
     };
+
     sf.onerror = reject;
     sf.postMessage('uci');
     sf.postMessage('setoption name Hash value 32');
@@ -539,115 +414,22 @@ function loadStockfish() {
 function applyEloToEngine() {
   if (!sf) return;
   try {
-    const uciElo = Math.min(3190, Math.max(100, getElo()));
+    const uciElo = Math.min(3190, Math.max(1320, getElo()));
     sf.postMessage('setoption name UCI_LimitStrength value true');
     sf.postMessage('setoption name UCI_Elo value ' + uciElo);
-  } catch (e) {}
+  } catch (e) {
+  }
 }
 
 function sfGo(fen) {
   return new Promise(resolve => {
     sfResolve = resolve;
     sf.postMessage('position fen ' + fen);
-    
-    const currentElo = getElo();
-    const dynamicDepth = currentElo < 400 ? 3 : (currentElo < 1000 ? 8 : 15);
-    sf.postMessage('go depth ' + dynamicDepth + ' movetime 600');
+    sf.postMessage('go depth 18 movetime 1200');
   });
 }
 
-// ── Active Clock Handling ─────────────────────────────────────
-function startClock() {
-  clearInterval(clockInterval);
-  clockInterval = setInterval(() => {
-    if (!gameStarted || game.game_over() || editMode || aiThinking) return;
-    
-    const turn = game.turn(); 
-    clocks[turn] = Math.max(0, clocks[turn] - 1);
-    renderClocks();
-
-    if (clocks[turn] === 0) {
-      clearInterval(clockInterval);
-      handleTimeout(turn);
-    }
-  }, 1000);
-}
-
-function stopClock() {
-  clearInterval(clockInterval);
-}
-
-function onClockConfigChange(position) {
-  if (gameStarted) return; 
-
-  const tTop = document.getElementById('time-top');
-  const iTop = document.getElementById('inc-top');
-  const tBot = document.getElementById('time-bottom');
-  const iBot = document.getElementById('inc-bottom');
-
-  if (rated) {
-    if (position === 'top') {
-      tBot.value = tTop.value;
-      iBot.value = iTop.value;
-    } else {
-      tTop.value = tBot.value;
-      iTop.value = iBot.value;
-    }
-  }
-
-  const topColor = flipped ? 'w' : 'b';
-  const botColor = flipped ? 'b' : 'w';
-
-  clocks[topColor] = parseInt(tTop.value) * 60;
-  increments[topColor] = parseInt(iTop.value);
-
-  clocks[botColor] = parseInt(tBot.value) * 60;
-  increments[botColor] = parseInt(iBot.value);
-
-  renderClocks();
-}
-
-function renderClocks() {
-  const tTop = document.getElementById('time-top');
-  const iTop = document.getElementById('inc-top');
-  const tBot = document.getElementById('time-bottom');
-  const iBot = document.getElementById('inc-bottom');
-
-  const topColor = flipped ? 'w' : 'b';
-  const botColor = flipped ? 'b' : 'w';
-
-  tTop.options[tTop.selectedIndex].text = formatTime(clocks[topColor]);
-  tBot.options[tBot.selectedIndex].text = formatTime(clocks[botColor]);
-
-  tTop.disabled = gameStarted; iTop.disabled = gameStarted;
-  tBot.disabled = gameStarted; iBot.disabled = gameStarted;
-
-  const currentTurn = game.turn();
-  const wrapTop = document.getElementById('wrap-top');
-  const wrapBot = document.getElementById('wrap-bottom');
-
-  wrapTop.className = 'clock-selector-wrap' + (currentTurn === topColor && gameStarted && !game.game_over() ? ' running' : '') + (clocks[topColor] <= 30 ? ' low' : '');
-  wrapBot.className = 'clock-selector-wrap' + (currentTurn === botColor && gameStarted && !game.game_over() ? ' running' : '') + (clocks[botColor] <= 30 ? ' low' : '');
-}
-
-function formatTime(secs) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s < 10 ? '0' : ''}${s}`;
-}
-
-function handleTimeout(loserColor) {
-  let em = '🏆', title, sub, eloChange = 0;
-  const youWon = (loserColor !== playerColor);
-  
-  title = youWon ? 'You Win!' : 'Stockfish Wins';
-  sub = 'Time out';
-  eloChange = youWon ? 30 : -30;
-  
-  triggerGameOver(em, title, sub, eloChange);
-}
-
-// ── Board Interface Rendering ─────────────────────────────────
+// ── Board build ───────────────────────────────────────────────
 function buildBoard() {
   const el = document.getElementById('board');
   const sz = Math.min(window.innerWidth - 20, window.innerHeight * 0.44, 420);
@@ -681,15 +463,16 @@ function buildBoard() {
     }
   }
   render();
-  renderClocks();
 }
 
+// ── Get current piece at idx ──────────────────
 function pieceAt(idx) {
   if (editMode) return editBoard[idx];
   const p = game.get(idxToAlg(idx));
   return p ? { type: p.type, color: p.color } : null;
 }
 
+// ── Render pieces + highlights ────────────────────────────────
 function render() {
   document.querySelectorAll('.sq').forEach(sqEl => {
     const idx = +sqEl.dataset.i;
@@ -721,6 +504,7 @@ function render() {
   });
 }
 
+// ── Determine if a piece at idx can currently be picked up ─────
 function canDragFrom(idx) {
   if (editMode) return editTool === null;
   if (aiThinking) return false;
@@ -731,13 +515,17 @@ function canDragFrom(idx) {
   return true;
 }
 
+// ── Drag handlers ──────────────────
 function attachDragHandlers(img, idx) {
   img.addEventListener('pointerdown', (e) => onDragStart(e, idx));
 }
 
 function onDragStart(e, idx) {
-  if (editMode) { if (editTool !== null) return; } 
-  else { if (!canDragFrom(idx)) return; }
+  if (editMode) {
+    if (editTool !== null) return;
+  } else {
+    if (!canDragFrom(idx)) return;
+  }
   e.preventDefault();
 
   const srcImg = e.target;
@@ -794,7 +582,10 @@ function onDragEnd(e) {
   const sqEl = target ? target.closest('.sq') : null;
   const toIdx = sqEl ? +sqEl.dataset.i : null;
 
-  if (!moved || toIdx === null) { render(); return; }
+  if (!moved || toIdx === null) {
+    render();
+    return;
+  }
 
   if (editMode) {
     if (toIdx !== fromIdx) {
@@ -809,8 +600,10 @@ function onDragEnd(e) {
   attemptMove(fromIdx, toIdx);
 }
 
+// ── Drag a piece from the edit picker onto the board ──
 function onPickerDragStart(e, type, color) {
   if (!editMode) return;
+
   const boardEl = document.getElementById('board');
   const size = boardEl.offsetWidth / 8;
   dragOffsetX = size / 2;
@@ -840,7 +633,6 @@ function onPickerDragMove(e) {
   pickerDrag.ghost.style.top  = (e.clientY - dragOffsetY) + 'px';
 }
 
-// ── Picker Drop Management ────────────────────────────────────
 function onPickerDragEnd(e) {
   window.removeEventListener('pointermove', onPickerDragMove);
   window.removeEventListener('pointerup', onPickerDragEnd);
@@ -849,6 +641,7 @@ function onPickerDragEnd(e) {
   const { type, color, ghost, moved } = pickerDrag;
   pickerDrag = null;
   ghost.remove();
+
   if (!moved) return;
 
   const target = document.elementFromPoint(e.clientX, e.clientY);
@@ -859,6 +652,7 @@ function onPickerDragEnd(e) {
   render();
 }
 
+// ── Click handling ────────────────────────────────
 function onSqClick(idx) {
   if (editMode) { onEditSqClick(idx); return; }
   if (!sfReady || aiThinking) return;
@@ -887,22 +681,29 @@ function onSqClick(idx) {
       hints = game.moves({ square: alg, verbose: true }).map(m => algToIdx(m.to));
       render();
     } else {
-      sel = null; hints = []; render();
+      sel = null; hints = [];
+      render();
     }
   }
 }
 
+// ── Attempt a move ─────────────────────
 function attemptMove(fromIdx, toIdx) {
   const fromAlg = idxToAlg(fromIdx);
   const toAlg   = idxToAlg(toIdx);
   const moves   = game.moves({ square: fromAlg, verbose: true });
   const mv      = moves.find(m => m.to === toAlg);
 
-  if (!mv) { sel = null; hints = []; render(); return; }
+  if (!mv) {
+    sel = null; hints = [];
+    render();
+    return;
+  }
 
   if (mv.flags.includes('p')) {
     pendingPromo = { from: fromAlg, to: toAlg };
-    sel = null; hints = []; render();
+    sel = null; hints = [];
+    render();
     showPromo(playerColor);
     return;
   }
@@ -910,20 +711,13 @@ function attemptMove(fromIdx, toIdx) {
 }
 
 function doMove(from, to, promo) {
-  const activeTurn = game.turn();
   const result = game.move({ from, to, promotion: promo || 'q' });
   if (!result) return;
 
-  if (gameStarted) {
-    clocks[activeTurn] += increments[activeTurn];
-  }
-
   gameStarted = true;
-  startClock(); 
   lastMv = { from: algToIdx(from), to: algToIdx(to) };
   sel = null; hints = [];
   render();
-  renderClocks();
   updateHist();
   updateStatus();
   checkOver();
@@ -934,6 +728,7 @@ function doMove(from, to, promo) {
   }
 }
 
+// ── Promotion ─────────────────────────────────────────────────
 function showPromo(color) {
   const types = ['q', 'r', 'b', 'n'];
   const cont  = document.getElementById('promo-pieces');
@@ -955,18 +750,17 @@ function showPromo(color) {
     };
     cont.appendChild(btn);
   });
+
   document.getElementById('promo-ov').classList.add('on');
 }
 
+// ── Stockfish move ────────────────────────────────────────────
 async function doAI() {
   if (aiThinking || !sfReady) return;
   aiThinking = true;
   document.getElementById('dots').classList.add('on');
   setStatus('Stockfish thinking…', '');
   render();
-  renderClocks();
-
-  const activeTurn = game.turn();
 
   try {
     const moveStr = await sfGo(game.fen());
@@ -975,23 +769,23 @@ async function doAI() {
       const to    = moveStr.slice(2, 4);
       const promo = moveStr[4] || undefined;
       game.move({ from, to, promotion: promo });
-      
-      clocks[activeTurn] += increments[activeTurn];
       gameStarted = true;
       lastMv = { from: algToIdx(from), to: algToIdx(to) };
     }
-  } catch(e) { setStatus('Engine error', 'danger'); }
+  } catch(e) {
+    setStatus('Engine error', 'danger');
+  }
 
   aiThinking = false;
   document.getElementById('dots').classList.remove('on');
   render();
-  renderClocks();
   updateHist();
   updateStatus();
   checkOver();
   updateButtons();
 }
 
+// ── Eval bar ──────────────────────────────────────────────────
 function updateEvalBar(score) {
   if (rated) return;
   const c = Math.max(-10, Math.min(10, score));
@@ -999,10 +793,52 @@ function updateEvalBar(score) {
   document.getElementById('enum').textContent = (score > 0.05 ? '+' : '') + score.toFixed(1);
 }
 
+// ── Status ────────────────────────────────────────────────────
 function setStatus(msg, cls) {
   const el = document.getElementById('status');
   el.textContent = msg;
   el.className   = 'status' + (cls ? ' ' + cls : '');
+}
+
+// ── Update labels and dot locations safely ────────────────────
+function refreshStrips() {
+  const youAreWhite = playerColor === 'w';
+  const elo = getElo();
+
+  const topIsYou = flipped;
+  const youIcon = youAreWhite ? '♔' : '♚';
+  const youIconCls = youAreWhite ? 'w' : 'b';
+  const sfIcon = youAreWhite ? '♚' : '♔';
+  const sfIconCls = youAreWhite ? 'b' : 'w';
+
+  const topName  = topIsYou ? 'You' : 'Stockfish';
+  const botName  = topIsYou ? 'Stockfish' : 'You';
+  const topIconC = topIsYou ? youIcon : sfIcon;
+  const topIconCl= topIsYou ? youIconCls : sfIconCls;
+  const botIconC = topIsYou ? sfIcon : youIcon;
+  const botIconCl= topIsYou ? sfIconCls : youIconCls;
+
+  document.getElementById('name-top').textContent = topName;
+  document.getElementById('name-bottom').textContent = botName;
+  document.getElementById('icon-top').textContent = topIconC;
+  document.getElementById('icon-top').className = 'picon ' + topIconCl;
+  document.getElementById('icon-bottom').textContent = botIconC;
+  document.getElementById('icon-bottom').className = 'picon ' + botIconCl;
+
+  document.getElementById('rtg-top').textContent = 'Elo ' + elo;
+  document.getElementById('rtg-bottom').textContent = 'Elo ' + elo;
+
+  const dots = document.getElementById('dots');
+  if (dots) {
+    if (topIsYou) {
+      document.getElementById('strip-bottom').append(dots);
+    } else {
+      document.getElementById('strip-top').append(dots);
+    }
+  }
+
+  document.getElementById('delta-top').textContent = '';
+  document.getElementById('delta-bottom').textContent = '';
 }
 
 function updateStatus() {
@@ -1014,18 +850,7 @@ function updateStatus() {
   else                                   setStatus('Stockfish · ' + who, '');
 }
 
-function getMoveHistoryString() {
-  const hist = game.history();
-  let text = '';
-  for (let i = 0; i < hist.length; i += 2) {
-    const mn = i / 2 + 1;
-    text += mn + '. ' + hist[i];
-    if (hist[i+1]) text += ' ' + hist[i+1];
-    text += ' ';
-  }
-  return text.trim() || "No moves recorded.";
-}
-
+// ── Move history ─────────────────────────────
 function updateHist() {
   const rowsEl = document.getElementById('histrows');
   const hist = game.history();
@@ -1045,19 +870,23 @@ function updateHist() {
     const b = hist[i + 1];
 
     const num = document.createElement('span');
-    num.className = 'mn'; num.textContent = mn + '.';
+    num.className = 'mn';
+    num.textContent = mn + '.';
     whiteRow.appendChild(num);
 
     const wSpan = document.createElement('span');
-    wSpan.className = 'mv'; wSpan.textContent = w;
+    wSpan.className = 'mv';
+    wSpan.textContent = w;
     whiteRow.appendChild(wSpan);
 
     const spacer = document.createElement('span');
-    spacer.className = 'mv spacer'; spacer.textContent = w;
+    spacer.className = 'mv spacer';
+    spacer.textContent = w;
     blackRow.appendChild(spacer);
 
     const bSpan = document.createElement('span');
-    bSpan.className = 'mv'; bSpan.textContent = b || '';
+    bSpan.className = 'mv';
+    bSpan.textContent = b || '';
     if (!b) bSpan.classList.add('spacer');
     blackRow.appendChild(bSpan);
   }
@@ -1080,8 +909,16 @@ function updateHist() {
 }
 
 document.getElementById('copy-btn').addEventListener('click', () => {
-  const text = getMoveHistoryString();
-  if (text === "No moves recorded.") return;
+  const hist = game.history();
+  if (!hist.length) return;
+  let text = '';
+  for (let i = 0; i < hist.length; i += 2) {
+    const mn = i / 2 + 1;
+    text += mn + '. ' + hist[i];
+    if (hist[i+1]) text += ' ' + hist[i+1];
+    text += ' ';
+  }
+  text = text.trim();
   const btn = document.getElementById('copy-btn');
   const doFlash = () => {
     btn.classList.add('copied');
@@ -1091,17 +928,20 @@ document.getElementById('copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(text).then(doFlash).catch(doFlash);
   } else {
     const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
     try { document.execCommand('copy'); } catch(e) {}
-    ta.remove(); doFlash();
+    ta.remove();
+    doFlash();
   }
 });
 
+// ── Game over + Elo update ──────────────────────────────────────
 function checkOver() {
   if (!game.game_over()) return;
-  stopClock();
-  
   let em, title, sub, eloChange = 0;
+
   if (game.in_checkmate()) {
     const won = game.turn() !== playerColor;
     em    = won ? '🏆' : '💀';
@@ -1111,75 +951,17 @@ function checkOver() {
   } else {
     em    = '🤝';
     title = 'Draw';
-    sub = game.in_stalemate()            ? 'Stalemate'
-        : game.in_threefold_repetition() ? 'Threefold repetition'
-        : game.insufficient_material()   ? 'Insufficient material'
-        : '50-move rule';
+    sub   = game.in_stalemate()            ? 'Stalemate'
+          : game.in_threefold_repetition() ? 'Threefold repetition'
+          : game.insufficient_material()   ? 'Insufficient material'
+          : '50-move rule';
     eloChange = 0;
   }
-  triggerGameOver(em, title, sub, eloChange);
-}
 
-// ── Persistent Game Memory Archive Logic ─────────────────────
-function archiveFinishedGame(type, outcomeText) {
-  try {
-    const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
-    const newEntry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}),
-      type: type, 
-      outcome: outcomeText,
-      moves: getMoveHistoryString(),
-      fen: game.fen()
-    };
-    archive.unshift(newEntry); 
-    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive));
-    renderArchiveList();
-  } catch(e) {}
-}
-
-function renderArchiveList() {
-  const container = document.getElementById('archive-list');
-  container.innerHTML = '';
-  try {
-    const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
-    if (archive.length === 0) {
-      container.innerHTML = '<div style="font-size:11px; color:var(--text2); text-align:center; padding:20px;">No saved games.</div>';
-      return;
-    }
-    archive.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'archive-item';
-      div.onclick = () => openArchiveReview(item);
-
-      div.innerHTML = `
-        <div class="archive-meta">
-          <span class="archive-tag ${item.type}">${item.type}</span>
-          <span class="archive-date">${item.date}</span>
-        </div>
-        <div class="archive-outcome">${item.outcome}</div>
-      `;
-      container.appendChild(div);
-    });
-  } catch(e) {
-    container.innerHTML = '<div style="font-size:11px; color:var(--red); text-align:center;">Failed to load history.</div>';
-  }
-}
-
-function openArchiveReview(item) {
-  document.getElementById('rev-title').textContent = item.outcome;
-  document.getElementById('rev-meta').textContent = `${item.date} · Type: ${item.type.toUpperCase()}`;
-  document.getElementById('rev-moves').textContent = item.moves;
-  document.getElementById('review-ov').classList.add('on');
-}
-
-function triggerGameOver(em, title, sub, eloChange) {
   const ovElo = document.getElementById('ov-elo');
-  const modeTag = rated ? 'rated' : 'unrated';
-  
   if (rated) {
     const oldElo = getElo();
-    const newElo = setElo(oldElo + eloChange); 
+    const newElo = setElo(oldElo + eloChange);
     if (eloChange > 0) {
       ovElo.textContent = `+${eloChange} Elo → ${newElo}`;
       ovElo.className = 'ovelo up';
@@ -1192,89 +974,37 @@ function triggerGameOver(em, title, sub, eloChange) {
     }
     refreshStrips();
     applyEloToEngine();
-    sub += " (Rated Match)";
   } else {
     ovElo.textContent = 'Unrated — Elo unchanged';
     ovElo.className = 'ovelo';
-    sub += " (Unrated Match)";
   }
-
-  archiveFinishedGame(modeTag, `${title} (${sub})`);
 
   document.getElementById('ov-em').textContent = em;
   document.getElementById('ov-t').textContent  = title;
-  document.getElementById('ovs').textContent  = sub;
+  document.getElementById('ov-s').textContent  = sub;
   setTimeout(() => document.getElementById('ov').classList.add('on'), 700);
 }
 
-function refreshStrips() {
-  const youAreWhite = playerColor === 'w';
-  const elo = getElo();
-  const topIsYou = flipped;
-  
-  const youIcon = youAreWhite ? '♔' : '♚';
-  const youIconCls = youAreWhite ? 'w' : 'b';
-  const sfIcon = youAreWhite ? '♚' : '♔';
-  const sfIconCls = youAreWhite ? 'b' : 'w';
-
-  document.getElementById('name-top').textContent = topIsYou ? 'You' : 'Stockfish';
-  document.getElementById('name-bottom').textContent = topIsYou ? 'Stockfish' : 'You';
-  
-  document.getElementById('icon-top').textContent = topIsYou ? youIcon : sfIcon;
-  document.getElementById('icon-top').className = 'picon ' + (topIsYou ? youIconCls : sfIconCls);
-  document.getElementById('icon-bottom').textContent = topIsYou ? sfIcon : youIcon;
-  document.getElementById('icon-bottom').className = 'picon ' + (topIsYou ? sfIconCls : youIconCls);
-
-  const dynamicRatingString = 'Elo ' + elo;
-  document.getElementById('rtg-top').textContent = dynamicRatingString;
-  document.getElementById('rtg-bottom').textContent = dynamicRatingString;
-
-  const dots = document.getElementById('dots');
-  const clockWrapTop = document.getElementById('wrap-top');
-  const wrapBot = document.getElementById('wrap-bottom');
-  
-  if (topIsYou) {
-    document.getElementById('strip-bottom').insertBefore(dots, wrapBot);
-  } else {
-    document.getElementById('strip-top').insertBefore(dots, clockWrapTop);
-  }
-
-  document.getElementById('delta-top').textContent = '';
-  document.getElementById('delta-bottom').textContent = '';
-}
-
+// ── Controls ──────────────────────────────────────────────────
 function newGame() {
   if (editMode) { exitEditMode(false); }
-  stopClock();
-  
   game = new Chess();
   sel = null; hints = []; lastMv = null;
   aiThinking = false; pendingPromo = null;
   gameStarted = false;
-  
-  const tTop = document.getElementById('time-top');
-  const iTop = document.getElementById('inc-top');
-  const tBot = document.getElementById('time-bottom');
-  const iBot = document.getElementById('inc-bottom');
-
-  const topColor = flipped ? 'w' : 'b';
-  const botColor = flipped ? 'b' : 'w';
-
-  clocks[topColor] = parseInt(tTop.value) * 60;
-  increments[topColor] = parseInt(iTop.value);
-  clocks[botColor] = parseInt(tBot.value) * 60;
-  increments[botColor] = parseInt(iBot.value);
-  
   if (sf) sf.postMessage('stop');
   document.getElementById('dots').classList.remove('on');
   document.getElementById('ebar').style.width = '50%';
   document.getElementById('enum').textContent  = '0.0';
-  
-  playerColor = flipped ? 'b' : 'w';
-  
   buildBoard();
   updateHist();
   updateButtons();
+
+  if (flipped) {
+    playerColor = 'b';
+  } else {
+    playerColor = 'w';
+  }
   refreshStrips();
 
   if (sfReady) {
@@ -1284,23 +1014,18 @@ function newGame() {
 }
 
 function doUndo() {
-  if (rated) return; 
+  if (rated) return;
   if (editMode) return;
   if (aiThinking) return;
   if (sf) sf.postMessage('stop');
   aiThinking = false;
   document.getElementById('dots').classList.remove('on');
-  
   game.undo();
   game.undo();
   lastMv = null;
   sel = null; hints = [];
   gameStarted = game.history().length > 0;
-  
-  if (!gameStarted) stopClock();
-  
   render();
-  renderClocks();
   updateHist();
   updateStatus();
   updateButtons();
@@ -1321,74 +1046,22 @@ function doFlip() {
 
 function closeOv() { document.getElementById('ov').classList.remove('on'); }
 
-// ── Rated / Unrated Toggle with Retained State ───────────────
+// ── Rated / Unrated toggle ───────────────────────────────────────
 function setRated(val) {
-  if (rated === val) return; 
-  if (editMode) { exitEditMode(false); }
-
-  const snapshot = {
-    fen: game.fen(),
-    gameStarted: gameStarted,
-    lastMv: lastMv,
-    clocks: { ...clocks },
-    increments: { ...increments },
-    playerColor: playerColor,
-    selectors: {
-      tTop: document.getElementById('time-top').value,
-      iTop: document.getElementById('inc-top').value,
-      tBot: document.getElementById('time-bottom').value,
-      iBot: document.getElementById('inc-bottom').value,
-    }
-  };
-
-  if (rated) { ratedSaveSlot = snapshot; } 
-  else { unratedSaveSlot = snapshot; }
-
+  if (editMode && val !== rated) {
+    exitEditMode(false);
+  }
   rated = val;
-  
   document.getElementById('tab-rated').classList.toggle('active', rated);
   document.getElementById('tab-rated').classList.toggle('rated', rated);
   document.getElementById('tab-unrated').classList.toggle('active', !rated);
   document.getElementById('toggle-slider').classList.toggle('right', rated);
+
   document.getElementById('evalrow').classList.toggle('hidden', rated);
-
-  const targetSlot = rated ? ratedSaveSlot : unratedSaveSlot;
-
-  if (targetSlot) {
-    game = new Chess(targetSlot.fen);
-    gameStarted = targetSlot.gameStarted;
-    lastMv = targetSlot.lastMv;
-    clocks = { ...targetSlot.clocks };
-    increments = { ...targetSlot.increments };
-    playerColor = targetSlot.playerColor;
-
-    document.getElementById('time-top').value = targetSlot.selectors.tTop;
-    document.getElementById('inc-top').value = targetSlot.selectors.iTop;
-    document.getElementById('time-bottom').value = targetSlot.selectors.tBot;
-    document.getElementById('inc-bottom').value = targetSlot.selectors.iBot;
-    
-    if (sf) sf.postMessage('stop');
-    aiThinking = false;
-    document.getElementById('dots').classList.remove('on');
-    
-    buildBoard();
-    updateHist();
-    
-    if (gameStarted && !game.game_over()) { startClock(); } 
-    else { stopClock(); }
-    
-    if (!game.game_over() && game.turn() !== playerColor && sfReady) {
-      setTimeout(doAI, 300);
-    }
-  } else {
-    populateClockSelectors();
-    newGame();
-  }
-
   updateButtons();
-  updateStatus();
 }
 
+// ── Button enable/disable states ─────────────────────────────────
 function updateButtons() {
   const undoBtn = document.getElementById('btn-undo');
   undoBtn.disabled = rated || editMode;
@@ -1400,15 +1073,17 @@ function updateButtons() {
   document.getElementById('btn-new').textContent = editMode ? 'Start Game' : 'New Game';
 }
 
-// ── Custom Position Setup Mode (Unrated Exclusive) ───────────
+// ── Edit mode ─────────────────────────────────────────────────────
 function toggleEdit() {
   if (rated) return;
-  if (editMode) { attemptStartFromEdit(); } 
-  else { enterEditMode(); }
+  if (editMode) {
+    attemptStartFromEdit();
+  } else {
+    enterEditMode();
+  }
 }
 
 function enterEditMode() {
-  stopClock();
   editMode = true;
   editTool = null;
   editBoard = new Array(64).fill(null);
@@ -1458,7 +1133,8 @@ function buildPicker() {
     });
     if (color === 'b') {
       const trash = document.createElement('button');
-      trash.className = 'picker-trash'; trash.textContent = '🗑';
+      trash.className = 'picker-trash';
+      trash.textContent = '🗑';
       trash.onclick = () => selectEditTool('trash');
       row.appendChild(trash);
     }
@@ -1489,7 +1165,9 @@ function selectEditTool(tool) {
 function placeEditPiece(idx, type, color) {
   if (type === 'k') {
     const existingIdx = editBoard.findIndex(p => p && p.type === 'k' && p.color === color);
-    if (existingIdx !== -1 && existingIdx !== idx) { editBoard[existingIdx] = null; }
+    if (existingIdx !== -1 && existingIdx !== idx) {
+      editBoard[existingIdx] = null;
+    }
   }
   editBoard[idx] = { type, color };
 }
@@ -1524,8 +1202,11 @@ function editBoardToFen(turn) {
 }
 
 function onPrimaryBtn() {
-  if (editMode) { attemptStartFromEdit(); } 
-  else { newGame(); }
+  if (editMode) {
+    attemptStartFromEdit();
+  } else {
+    newGame();
+  }
 }
 
 function attemptStartFromEdit() {
@@ -1540,7 +1221,9 @@ function attemptStartFromEdit() {
   const testFen = editBoardToFen(fenTurn);
 
   let testGame;
-  try { testGame = new Chess(testFen); } catch(e) {
+  try {
+    testGame = new Chess(testFen);
+  } catch(e) {
     setStatus('Invalid position', 'danger');
     return;
   }
@@ -1556,8 +1239,6 @@ function attemptStartFromEdit() {
   game = testGame;
   lastMv = null; sel = null; hints = [];
   gameStarted = false;
-  onClockConfigChange('bottom'); 
-  
   exitEditMode(true);
   refreshStrips();
   buildBoard();
@@ -1569,18 +1250,15 @@ function attemptStartFromEdit() {
   }
 }
 
-// ── Startup Initialization ────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 (async () => {
-  populateClockSelectors();
   buildBoard();
   refreshStrips();
   updateButtons();
-  renderArchiveList();
-  
   const bar = document.getElementById('lbar');
   const sub = document.getElementById('lsub');
   bar.style.width = '15%';
