@@ -43,10 +43,20 @@ body{
 .pdots i:nth-child(2){animation-delay:.18s}.pdots i:nth-child(3){animation-delay:.36s}
 @keyframes db{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
 
-/* Clocks */
-.pclock{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--surface2);padding:4px 8px;border-radius:6px;border:1px solid var(--border);min-width:54px;text-align:center}
-.pclock.running{background:var(--accent);color:#111;border-color:transparent}
-.pclock.low{background:var(--red);color:#fff;animation:flash-clock 0.5s infinite alternate}
+/* Configurable Native Scroll Container for Clocks */
+.clock-container{display:flex;align-items:center;gap:4px}
+.clock-selector-wrap{position:relative;display:flex;align-items:center;background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:2px 4px}
+.clock-selector-wrap.running{background:var(--accent);border-color:transparent}
+.clock-selector-wrap.running select{color:#111;font-weight:700}
+.clock-selector-wrap.low{background:var(--red);animation:flash-clock 0.5s infinite alternate}
+.clock-selector-wrap.low select{color:#fff}
+.clock-selector-wrap select{
+  background:transparent;color:var(--text);border:none;font-size:14px;font-weight:700;
+  font-variant-numeric:tabular-nums;outline:none;cursor:pointer;
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;padding-right:2px;
+}
+.inc-label{font-size:10px;color:var(--text2);font-weight:bold;margin-left:2px}
+
 @keyframes flash-clock{from{opacity:1}to{opacity:0.6}}
 
 /* Eval bar - unrated only */
@@ -194,7 +204,8 @@ body{
 .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99;align-items:center;justify-content:center}
 .ov.on{display:flex}
 .ovc{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;text-align:center;max-width:290px;width:88%}
-.ovem{font-size:52px;margin-bottom:10px}.ovt{font-size:22px;font-weight:700;margin-bottom:5px}
+.ovem{font-size:52px;margin-bottom:10px}
+.ovt{font-size:22px;font-weight:700;margin-bottom:5px}
 .ovs{font-size:13px;color:var(--text2);margin-bottom:8px}
 .ovelo{font-size:14px;font-weight:700;margin-bottom:22px}
 .ovelo.up{color:var(--green)}
@@ -233,13 +244,21 @@ body{
 </div>
 
 <div class="main">
+  <!-- Top Player Strip -->
   <div class="pstrip" id="strip-top">
     <div class="picon b" id="icon-top">♚</div>
     <div class="pname" id="name-top">Stockfish</div>
     <div class="prating" id="rtg-top">Elo 100</div>
     <span class="elo-delta" id="delta-top"></span>
     <div class="pdots" id="dots"><i></i><i></i><i></i></div>
-    <div class="pclock" id="clock-top">10:00</div>
+    
+    <div class="clock-container">
+      <div class="clock-selector-wrap" id="wrap-top">
+        <select id="time-top" onchange="onClockConfigChange('top')"></select>
+        <span class="inc-label">i</span>
+        <select id="inc-top" onchange="onClockConfigChange('top')"></select>
+      </div>
+    </div>
   </div>
 
   <div class="evalrow" id="evalrow">
@@ -249,12 +268,21 @@ body{
 
   <div class="bwrap"><div id="board"></div></div>
 
+  <!-- Bottom Player Strip -->
   <div class="pstrip" id="strip-bottom">
     <div class="picon w" id="icon-bottom">♔</div>
     <div class="pname" id="name-bottom">You</div>
     <div class="prating" id="rtg-bottom">Human</div>
     <span class="elo-delta" id="delta-bottom"></span>
-    <div class="pclock" id="clock-bottom">10:00</div>
+    <div class="pdots" id="dots-bottom"></div>
+    
+    <div class="clock-container">
+      <div class="clock-selector-wrap" id="wrap-bottom">
+        <select id="time-bottom" onchange="onClockConfigChange('bottom')"></select>
+        <span class="inc-label">i</span>
+        <select id="inc-bottom" onchange="onClockConfigChange('bottom')"></select>
+      </div>
+    </div>
   </div>
 
   <div class="status" id="status">Loading…</div>
@@ -291,6 +319,7 @@ body{
   </div>
 </div>
 
+<!-- Promotion picker -->
 <div class="promo-ov" id="promo-ov">
   <div class="promo-card">
     <div class="promo-title">Promote to…</div>
@@ -298,6 +327,7 @@ body{
   </div>
 </div>
 
+<!-- Game over -->
 <div class="ov" id="ov">
   <div class="ovc">
     <div class="ovem" id="ov-em"></div>
@@ -319,17 +349,17 @@ function pieceImg(type, color) {
   return `./${type}${color}.png`;
 }
 
-// ── Persistent Elo ────────────────────────────────────────────
+// ── Persistent Elo with Hard Floor at 100 ─────────────────────
 const ELO_KEY = 'chess_elo';
 let memElo = 100;
 function getElo() {
   try {
     const v = parseInt(localStorage.getItem(ELO_KEY));
-    return isNaN(v) ? memElo : v;
+    return isNaN(v) ? memElo : Math.max(100, v);
   } catch (e) { return memElo; }
 }
 function setElo(v) {
-  v = Math.max(0, v);
+  v = Math.max(100, v); // Enforces that Elo can never go below 100
   memElo = v;
   try { localStorage.setItem(ELO_KEY, String(v)); } catch (e) {}
   return v;
@@ -351,20 +381,21 @@ let pendingPromo = null;
 let rated       = false;
 let gameStarted = false;  
 
-// ── Clock Variables ───────────────────────────────────────────
-let clocks = { w: 600, b: 600 }; // 10 minutes default
+// ── Time & Increments Control Variables ───────────────────────
+let clocks = { w: 600, b: 600 }; 
+let increments = { w: 0, b: 0 }; 
 let clockInterval = null;
 
-// ── Dual Memory Slots (Separate States) ───────────────────────
+// ── Dual Memory Game Sessions ─────────────────────────────────
 let unratedSaveSlot = null;
 let ratedSaveSlot = null;
 
-// Drag state
+// Drag assets state
 let dragPiece   = null;
 let pickerDrag  = null;
 let dragOffsetX = 0, dragOffsetY = 0;
 
-// Edit mode state
+// Edit assets mode state
 let editMode    = false;
 let editBoard   = null;   
 let editTool    = null;   
@@ -380,7 +411,35 @@ function algToIdx(alg) {
   return (8 - parseInt(alg[1])) * 8 + (alg.charCodeAt(0) - 97);
 }
 
-// ── Stockfish Integration ──────────────────────────────────────
+// ── Build Wheel Scroll Dropdowns ─────────────────────────────
+const minuteOptions = [1, 2, 3, 5, 10, 15, 30, 45, 60];
+const incrementOptions = [0, 1, 2, 5, 10, 15, 30, 60];
+
+function populateClockSelectors() {
+  const tTop = document.getElementById('time-top');
+  const iTop = document.getElementById('inc-top');
+  const tBot = document.getElementById('time-bottom');
+  const iBot = document.getElementById('inc-bottom');
+
+  tTop.innerHTML = ''; iTop.innerHTML = '';
+  tBot.innerHTML = ''; iBot.innerHTML = '';
+
+  minuteOptions.forEach(m => {
+    tTop.appendChild(new Option(m + "m", m));
+    tBot.appendChild(new Option(m + "m", m));
+  });
+
+  incrementOptions.forEach(s => {
+    iTop.appendChild(new Option(s + "s", s));
+    iBot.appendChild(new Option(s + "s", s));
+  });
+
+  // Default values set to standard Blitz/Rapid profiles
+  tTop.value = "10"; iTop.value = "0";
+  tBot.value = "10"; iBot.value = "0";
+}
+
+// ── Stockfish UCI Controls ────────────────────────────────────
 function loadStockfish() {
   return new Promise((resolve, reject) => {
     try {
@@ -431,13 +490,13 @@ function sfGo(fen) {
   });
 }
 
-// ── Clock Management ──────────────────────────────────────────
+// ── Active Clock Handling ─────────────────────────────────────
 function startClock() {
   clearInterval(clockInterval);
   clockInterval = setInterval(() => {
     if (!gameStarted || game.game_over() || editMode || aiThinking) return;
     
-    const turn = game.turn(); // 'w' or 'b'
+    const turn = game.turn(); 
     clocks[turn] = Math.max(0, clocks[turn] - 1);
     renderClocks();
 
@@ -452,24 +511,63 @@ function stopClock() {
   clearInterval(clockInterval);
 }
 
+function onClockConfigChange(position) {
+  if (gameStarted) return; // Prevent adjustment mid-game
+
+  const tTop = document.getElementById('time-top');
+  const iTop = document.getElementById('inc-top');
+  const tBot = document.getElementById('time-bottom');
+  const iBot = document.getElementById('inc-bottom');
+
+  if (rated) {
+    // Mirror values across both fields dynamically on rated configurations
+    if (position === 'top') {
+      tBot.value = tTop.value;
+      iBot.value = iTop.value;
+    } else {
+      tTop.value = tBot.value;
+      iTop.value = iBot.value;
+    }
+  }
+
+  const topColor = flipped ? 'w' : 'b';
+  const botColor = flipped ? 'b' : 'w';
+
+  clocks[topColor] = parseInt(tTop.value) * 60;
+  increments[topColor] = parseInt(iTop.value);
+
+  clocks[botColor] = parseInt(tBot.value) * 60;
+  increments[botColor] = parseInt(iBot.value);
+
+  renderClocks();
+}
+
 function renderClocks() {
-  const topClock = document.getElementById('clock-top');
-  const botClock = document.getElementById('clock-bottom');
+  const tTop = document.getElementById('time-top');
+  const iTop = document.getElementById('inc-top');
+  const tBot = document.getElementById('time-bottom');
+  const iBot = document.getElementById('inc-bottom');
+
+  const wColor = 'w';
+  const bColor = 'b';
   
-  const whiteStr = formatTime(clocks.w);
-  const blackStr = formatTime(clocks.b);
-  
-  const youAreWhite = (playerColor === 'w');
-  const topTurn = flipped ? 'w' : 'b';
-  const botTurn = flipped ? 'b' : 'w';
-  
-  topClock.textContent = flipped ? whiteStr : blackStr;
-  botClock.textContent = flipped ? blackStr : whiteStr;
-  
-  // Highlight active running timer
+  const topColor = flipped ? wColor : bColor;
+  const botColor = flipped ? bColor : wColor;
+
+  // Render text inside dropdown elements natively
+  tTop.options[tTop.selectedIndex].text = formatTime(clocks[topColor]);
+  tBot.options[tBot.selectedIndex].text = formatTime(clocks[botColor]);
+
+  // Lock selectors during live gameplay so scroll wheels don't pop up misfiring
+  tTop.disabled = gameStarted; iTop.disabled = gameStarted;
+  tBot.disabled = gameStarted; iBot.disabled = gameStarted;
+
   const currentTurn = game.turn();
-  topClock.className = 'pclock' + (currentTurn === topTurn && gameStarted && !game.game_over() ? ' running' : '') + (clocks[topTurn] <= 30 ? ' low' : '');
-  botClock.className = 'pclock' + (currentTurn === botTurn && gameStarted && !game.game_over() ? ' running' : '') + (clocks[botTurn] <= 30 ? ' low' : '');
+  const wrapTop = document.getElementById('wrap-top');
+  const wrapBot = document.getElementById('wrap-bottom');
+
+  wrapTop.className = 'clock-selector-wrap' + (currentTurn === topColor && gameStarted && !game.game_over() ? ' running' : '') + (clocks[topColor] <= 30 ? ' low' : '');
+  wrapBot.className = 'clock-selector-wrap' + (currentTurn === botColor && gameStarted && !game.game_over() ? ' running' : '') + (clocks[botColor] <= 30 ? ' low' : '');
 }
 
 function formatTime(secs) {
@@ -489,7 +587,7 @@ function handleTimeout(loserColor) {
   triggerGameOver(em, title, sub, eloChange);
 }
 
-// ── Board Construction ────────────────────────────────────────
+// ── Board Interface Rendering ─────────────────────────────────
 function buildBoard() {
   const el = document.getElementById('board');
   const sz = Math.min(window.innerWidth - 20, window.innerHeight * 0.44, 420);
@@ -751,11 +849,17 @@ function attemptMove(fromIdx, toIdx) {
 }
 
 function doMove(from, to, promo) {
+  const activeTurn = game.turn();
   const result = game.move({ from, to, promotion: promo || 'q' });
   if (!result) return;
 
+  // Add increment reward to the side that just moved successfully
+  if (gameStarted) {
+    clocks[activeTurn] += increments[activeTurn];
+  }
+
   gameStarted = true;
-  startClock(); // Safely activates the timer cycle on first move
+  startClock(); 
   lastMv = { from: algToIdx(from), to: algToIdx(to) };
   sel = null; hints = [];
   render();
@@ -802,6 +906,8 @@ async function doAI() {
   render();
   renderClocks();
 
+  const activeTurn = game.turn();
+
   try {
     const moveStr = await sfGo(game.fen());
     if (moveStr && moveStr !== '(none)' && moveStr.length >= 4) {
@@ -809,6 +915,9 @@ async function doAI() {
       const to    = moveStr.slice(2, 4);
       const promo = moveStr[4] || undefined;
       game.move({ from, to, promotion: promo });
+      
+      // Award matching AI increment
+      clocks[activeTurn] += increments[activeTurn];
       gameStarted = true;
       lastMv = { from: algToIdx(from), to: algToIdx(to) };
     }
@@ -939,10 +1048,10 @@ function checkOver() {
   } else {
     em    = '🤝';
     title = 'Draw';
-    sub   = game.in_stalemate()            ? 'Stalemate'
-          : game.in_threefold_repetition() ? 'Threefold repetition'
-          : game.insufficient_material()   ? 'Insufficient material'
-          : '50-move rule';
+    sub = game.in_stalemate()            ? 'Stalemate'
+        : game.in_threefold_repetition() ? 'Threefold repetition'
+        : game.insufficient_material()   ? 'Insufficient material'
+        : '50-move rule';
     eloChange = 0;
   }
   triggerGameOver(em, title, sub, eloChange);
@@ -953,7 +1062,7 @@ function triggerGameOver(em, title, sub, eloChange) {
   
   if (rated) {
     const oldElo = getElo();
-    const newElo = setElo(oldElo + eloChange);
+    const newElo = setElo(oldElo + eloChange); // Automatically enforces floor 100 via inner wrapper logic
     if (eloChange > 0) {
       ovElo.textContent = `+${eloChange} Elo → ${newElo}`;
       ovElo.className = 'ovelo up';
@@ -989,27 +1098,24 @@ function refreshStrips() {
   const sfIcon = youAreWhite ? '♚' : '♔';
   const sfIconCls = youAreWhite ? 'b' : 'w';
 
-  const topName  = topIsYou ? 'You' : 'Stockfish';
-  const botName  = topIsYou ? 'You' : 'Stockfish'; // normalized tracking
-  document.getElementById('name-top').textContent = topName;
-  document.getElementById('name-bottom').textContent = botName ? (topIsYou ? 'Stockfish' : 'You') : 'You';
+  document.getElementById('name-top').textContent = topIsYou ? 'You' : 'Stockfish';
+  document.getElementById('name-bottom').textContent = topIsYou ? 'Stockfish' : 'You';
   
   document.getElementById('icon-top').textContent = topIsYou ? youIcon : sfIcon;
   document.getElementById('icon-top').className = 'picon ' + (topIsYou ? youIconCls : sfIconCls);
   document.getElementById('icon-bottom').textContent = topIsYou ? sfIcon : youIcon;
   document.getElementById('icon-bottom').className = 'picon ' + (topIsYou ? sfIconCls : youIconCls);
 
-  document.getElementById('rtg-top').textContent = 'Elo ' + elo;
-  document.getElementById('rtg-bottom').textContent = 'Elo ' + elo;
+  document.getElementById('rtg-top').textContent = topIsYou ? 'Elo ' + elo : 'Engine';
+  document.getElementById('rtg-bottom').textContent = topIsYou ? 'Engine' : 'Elo ' + elo;
 
   const dots = document.getElementById('dots');
-  const clockTop = document.getElementById('clock-top');
-  const clockBot = document.getElementById('clock-bottom');
+  const clockWrapTop = document.getElementById('wrap-top');
   
   if (topIsYou) {
-    document.getElementById('strip-bottom').insertBefore(dots, clockBot);
+    document.getElementById('strip-bottom').insertBefore(dots, wrapBot);
   } else {
-    document.getElementById('strip-top').insertBefore(dots, clockTop);
+    document.getElementById('strip-top').insertBefore(dots, clockWrapTop);
   }
 
   document.getElementById('delta-top').textContent = '';
@@ -1024,7 +1130,20 @@ function newGame() {
   sel = null; hints = []; lastMv = null;
   aiThinking = false; pendingPromo = null;
   gameStarted = false;
-  clocks = { w: 600, b: 600 }; 
+  
+  // Re-pull configurations directly from setup pickers
+  const tTop = document.getElementById('time-top');
+  const iTop = document.getElementById('inc-top');
+  const tBot = document.getElementById('time-bottom');
+  const iBot = document.getElementById('inc-bottom');
+
+  const topColor = flipped ? 'w' : 'b';
+  const botColor = flipped ? 'b' : 'w';
+
+  clocks[topColor] = parseInt(tTop.value) * 60;
+  increments[topColor] = parseInt(iTop.value);
+  clocks[botColor] = parseInt(tBot.value) * 60;
+  increments[botColor] = parseInt(iBot.value);
   
   if (sf) sf.postMessage('stop');
   document.getElementById('dots').classList.remove('on');
@@ -1082,25 +1201,31 @@ function doFlip() {
 
 function closeOv() { document.getElementById('ov').classList.remove('on'); }
 
-// ── Rated / Unrated Toggle with Multi-State Game Memory ─────────
+// ── Rated / Unrated Toggle with Restored Game Memory ─────────
 function setRated(val) {
   if (rated === val) return; 
   if (editMode) { exitEditMode(false); }
 
-  // 1. Save state of current tab configuration before leaving
+  // 1. Pack full game state into snapshot
   const snapshot = {
     fen: game.fen(),
-    historyHtml: game.history(),
     gameStarted: gameStarted,
     lastMv: lastMv,
     clocks: { ...clocks },
-    playerColor: playerColor
+    increments: { ...increments },
+    playerColor: playerColor,
+    selectors: {
+      tTop: document.getElementById('time-top').value,
+      iTop: document.getElementById('inc-top').value,
+      tBot: document.getElementById('time-bottom').value,
+      iBot: document.getElementById('inc-bottom').value,
+    }
   };
 
   if (rated) { ratedSaveSlot = snapshot; } 
   else { unratedSaveSlot = snapshot; }
 
-  // 2. Change state property
+  // 2. Shift active environment definition
   rated = val;
   
   document.getElementById('tab-rated').classList.toggle('active', rated);
@@ -1109,16 +1234,21 @@ function setRated(val) {
   document.getElementById('toggle-slider').classList.toggle('right', rated);
   document.getElementById('evalrow').classList.toggle('hidden', rated);
 
-  // 3. Load state from targeted tab configuration
+  // 3. Unpack slot memory state data safely
   const targetSlot = rated ? ratedSaveSlot : unratedSaveSlot;
 
   if (targetSlot) {
-    // Recover existing session
     game = new Chess(targetSlot.fen);
     gameStarted = targetSlot.gameStarted;
     lastMv = targetSlot.lastMv;
     clocks = { ...targetSlot.clocks };
+    increments = { ...targetSlot.increments };
     playerColor = targetSlot.playerColor;
+
+    document.getElementById('time-top').value = targetSlot.selectors.tTop;
+    document.getElementById('inc-top').value = targetSlot.selectors.iTop;
+    document.getElementById('time-bottom').value = targetSlot.selectors.tBot;
+    document.getElementById('inc-bottom').value = targetSlot.selectors.iBot;
     
     if (sf) sf.postMessage('stop');
     aiThinking = false;
@@ -1134,7 +1264,8 @@ function setRated(val) {
       setTimeout(doAI, 300);
     }
   } else {
-    // Generate standard layout session clean setup
+    // Fresh run profile setup
+    populateClockSelectors();
     newGame();
   }
 
@@ -1153,7 +1284,7 @@ function updateButtons() {
   document.getElementById('btn-new').textContent = editMode ? 'Start Game' : 'New Game';
 }
 
-// ── Custom Setup Setup Mode (Unrated Exclusive Asset) ────────────
+// ── Custom Setup Setup Mode (Unrated Exclusive) ────────────────
 function toggleEdit() {
   if (rated) return;
   if (editMode) { attemptStartFromEdit(); } 
@@ -1192,6 +1323,7 @@ function exitEditMode(applyBoard) {
   }
 }
 
+// ── Custom Mode Piece Asset Picker Builder ──────────────────────
 function buildPicker() {
   const picker = document.getElementById('picker');
   picker.innerHTML = '';
@@ -1309,7 +1441,7 @@ function attemptStartFromEdit() {
   game = testGame;
   lastMv = null; sel = null; hints = [];
   gameStarted = false;
-  clocks = { w: 600, b: 600 }; 
+  onClockConfigChange('bottom'); // Force load times correctly on dynamic layout
   
   exitEditMode(true);
   refreshStrips();
@@ -1322,12 +1454,13 @@ function attemptStartFromEdit() {
   }
 }
 
-// ── Startup Context Initialize ────────────────────────────────
+// ── Startup Initialization ────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 (async () => {
+  populateClockSelectors();
   buildBoard();
   refreshStrips();
   updateButtons();
